@@ -1,0 +1,64 @@
+#!/bin/bash
+###                                           ###
+###           g16 run script                  ###
+###         modfied for cogef                 ###
+# --------------------------------------------- #
+#
+# Problems: Christian.wick@irb.hr
+# Version: 1.0.0
+# --------------------------------------------- #
+
+if [ ! -r "$1" ] ; then
+  echo "usage: rung16 file-gau.com "
+  exit 1
+fi
+
+# Generate Scratch directory
+
+GAUSS_SCRDIR=${GAUSS_SCRDIR:-/scratch/}
+if [ -w "$GAUSS_SCRDIR" ] ; then
+  job=$$
+  mydir=$(mktemp -d $GAUSS_SCRDIR/g16job__${job}__XXXX)
+  export GAUSS_SCRDIR=$mydir
+else
+  echo "No Scratch directory"
+  exit 3
+fi
+
+# unzip checkpoint file
+
+chkf=($(fgrep '%chk=' -i $1 | cut -c 6-60))
+if [ ${chkf[1]} ] ; then
+  echo "Compound jobs unzip the first checkpoint file only"
+fi
+
+chkf=${chkf%.chk}
+if [ -f $chkf.chk.gz ] ; then
+  unpigz $chkf.chk.gz
+fi
+
+# additional environ variables
+
+export PATH="$GAUSS_EXEDIR:$PATH"
+export GFEXT_CWD=$(pwd)
+export LD_LIBRARY_PATH=$GAUSS_EXEDIR
+export GAUSS_ARCNAME=$GAUSS_ARCHDIR/$1
+
+# RunGauss
+logfile="${1%.com}.log"
+
+$g16root/g16/g16 < $1 > $logfile
+
+
+# Gzip
+
+#if [ -f $chkf.chk ] ; then
+#  pigz $chkf.chk
+#fi
+
+
+# Cleanup
+
+/bin/rm -rf $GAUSS_SCRDIR
+
+
