@@ -20,7 +20,8 @@ def logging_init( log_file = "job_cogef.log", log_level = "DEBUG", stream_level 
     shandler.setLevel(slevel)
 
     # add formatter
-    formatter = logging.Formatter('%(asctime)s - [%(name)8s] - [%(levelname)8s] : %(message)s')
+    formatter = logging.Formatter('%(asctime)s - [%(name)8s] - [%(levelname)8s] : %(message)s',
+                                    "%Y-%m-%d %H:%M:%S")
     fhandler.setFormatter(formatter)
     shandler.setFormatter(formatter)
 
