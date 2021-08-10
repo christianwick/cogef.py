@@ -13,13 +13,17 @@ setuptools.setup(
 
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Operating System :: Linux",
+        "Operating System :: Unix",
     ],
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
     python_requires=">=3.6",
     use_scm_version = {
         "write_to": "src/cogef/_version.py",
-        "write_to_template": "__version__ = '{version}'"},
-    setup_requires = ["setuptools_scm"]
+        "write_to_template": "__version__ = '{version}'",
+        "local_scheme" : "no-local-version", 
+        "version_scheme" : "no-guess-dev"
+        },
+    setup_requires = ["setuptools_scm"],
+    install_requires = ["numpy"]
 )

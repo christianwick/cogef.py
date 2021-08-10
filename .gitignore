@@ -19,6 +19,9 @@
 *.hess
 *.gbw
 
+# version
+*_version.py
+
 # unused files
 *unused_files
 

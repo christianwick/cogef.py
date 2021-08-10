@@ -1,11 +1,7 @@
 #!/bin/bash
 
-case $1 in
-	dev*)
-	  python3 -m pip install -e  . ;;
-	*)   
-	  python3 -m pip install  . ;;
-esac
+python3 -m pip install --upgrade pip
+python3 -m pip install -e  .
 
 # add variables to .bashrc
 COGEF_BASEDIR=$(pwd)/src
