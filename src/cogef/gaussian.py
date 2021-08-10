@@ -1,6 +1,10 @@
 
+import logging
+
 from collections import OrderedDict
 from cogef.molecule import Molecule
+
+logger = logging.getLogger("gaussian")
 
 class GaussianInput():
     """ the gaussian base class """
@@ -16,6 +20,7 @@ class GaussianInput():
                     multiplicity=[1],
                     route = "#P",
                     method="UB3LYP/D95(d,p)"):
+        logger.debug("Initialise gaussian base class")
         self.filename = filename
         self.molecule = Molecule(
                     elements=elements, 
@@ -81,6 +86,7 @@ class GaussianInput():
         of.write("--link1--\n")
 
     def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}):
+        logger.debug("Writing gaussian input file ...")
         opt_args = {
             "guess" : ["Mix","always"],
             "geom" : "Modredundant",
@@ -118,8 +124,10 @@ class GaussianInput():
             "scf" :  ["XQC","MaxConven=75"] ,
             "nosymm" : None })
         of.write("\n\n")
+        logger.debug("Finished writing gaussian input file.")
 
     def write_sp_input(self, of, route_args={}):
+        logger.debug("Writing gaussian sp input file ...")
         opt_args = {
             "guess" : ["Mix"],
             "stable" : "opt",
@@ -131,6 +139,7 @@ class GaussianInput():
         self._write_title(of)
         self._write_molecule(of)
         of.write("\n\n")
+        logger.debug("Finished writing gaussian sp input file.")
 
 
     
@@ -155,6 +164,7 @@ class GaussianInputWithFragments(GaussianInput):
         of.write("\n")
 
     def write_input_fragment_guess(self,of,modredundant,fragment):
+        logger.debug("Writing gaussian input file with fragments...")
         self._write_link0(of)
         self._write_route(of, args = {"guess": ["fragment=2","only"]})
         self._write_title(of)
@@ -177,6 +187,7 @@ class GaussianInputWithFragments(GaussianInput):
             "scf" : "XQC",
             "nosymm" : None })
         of.write("\n\n")
+        logger.debug("Finished writing gaussian input file with fragments.")
 
 
 class OniomInput(GaussianInput):

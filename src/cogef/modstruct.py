@@ -4,9 +4,12 @@
 
 
 import numpy as np
+import logging
 
+logger = logging.getLogger("modstruct")
 
 def mod_single_atom(coords,atom1,atom2,dx=0.02,symmetric=False):
+    logger.debug("moving single atom: {} {} by {} A".format(atom1,atom2,dx))
     if len(coords[0]) == 4:
         elements = [x[0] for x in coords]
         coords = [[x[1],x[2],x[3]] for x in coords ]
@@ -71,6 +74,8 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, dp=1.0, fragment=[0,1,2,3], sym
         fragment: needs to contain atom1
         dp: add an additional perturbation for atoms exept atom1 and atom2
     """
+    logger.debug("moving fragments: {} {} by {} A".format(atom1,atom2,dx))
+    logger.debug("fragment atoms: {} ; dp: {} A".format(fragment, dp))
     if len(coords[0]) == 4:
         elements = [x[0] for x in coords]
         coords = [[x[1],x[2],x[3]] for x in coords ]
@@ -85,13 +90,13 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, dp=1.0, fragment=[0,1,2,3], sym
     if symmetric:
         for ii in range(len(coords)):
             if ii in fragment:
-                print("move atom {} in - direction.".format(ii+1) )
+                logger.debug("move atom {} in - direction.".format(ii+1) )
                 if ii != atom1 and ii != atom2:
                     r = mat[ii,:] - vec * dx * dp * 0.5
                 else:
                     r = mat[ii,:] - vec * dx * 0.5
             else:
-                print("move atom {} in + direction.".format(ii+1) )
+                logger.debug("move atom {} in + direction.".format(ii+1) )
                 if ii != atom1 and ii != atom2:
                     r = mat[ii,:] + vec * dx * dp * 0.5
                 else:
@@ -100,7 +105,7 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, dp=1.0, fragment=[0,1,2,3], sym
     else:    
         for ii in range(len(coords)):
             if ii in fragment:
-                print("move atom {}".format(ii+1) )
+                logger.debug("move atom {}".format(ii+1) )
                 if ii != atom1 and ii != atom2:
                     r = mat[ii,:] - vec * dx * dp
                 else:

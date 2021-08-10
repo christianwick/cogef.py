@@ -15,6 +15,7 @@ import subprocess
 from cogef.constants import *
 from cogef import modstruct
 from cogef import gaussian
+from version import __version__
 
 
 if __name__ == "__main__":
@@ -40,6 +41,8 @@ if __name__ == "__main__":
     parser.add_argument("-calcfc", help="calculate Force Constants for difficult cases", choices=["CalcFC","RecalcFC=5","CalcAll", "None"], default="CalcFC")
     parser.add_argument("-rfo", help="use rfo",  choices=["RFO", "None"], default="RFO")
     parser.add_argument("-dispersion", help="GD3/GD3BJ/GD3", type=str, choices=["GD3","GD3BJ"], default=None)
+
+    parser.add_argument('--version', action='version', version='%(prog)s {version}'.format(version=__version__))
 
     args = parser.parse_args()
     atom1 = args.atoms[0]-1

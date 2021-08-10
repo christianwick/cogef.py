@@ -1,6 +1,12 @@
 import numpy as np
 import sys
+
+import logging
+
 from io import TextIOWrapper
+
+
+logger = logging.getLogger("molecule")
 
 class Molecule():
     """ the Molecule base class """
@@ -9,6 +15,7 @@ class Molecule():
                     fragments=[],
                     charge=[0],
                     multiplicity=[1]):
+        logger.debug("Initialise new molecule")
         self.elements = elements
         self.fragments = fragments
         self.coordinates = np.array(coordinates)
@@ -25,6 +32,7 @@ class Molecule():
         return(string)
 
     def read_xyz(self,inpstr=None):
+        logger.debug("Reading coordinates...")
         if isinstance(inpstr,str):
             lines = inpstr.split("\n")
         elif isinstance(inpstr,TextIOWrapper):
@@ -40,8 +48,10 @@ class Molecule():
             elements.append(str(temp[0]))
         self.elements = elements
         self.coordinates = np.array(coords)
+        logger.debug("Finished reading coordinates.")
     
     def write_xyz(self,filename,comment=""):
+        logger.debug("Writing xyz coordinates...")
         if isinstance(filename,str):
             of = open(filename,"w")
             need_to_close = True
@@ -56,9 +66,11 @@ class Molecule():
                 str(self.elements[ii]), *self.coordinates[ii]))
         if need_to_close:
             of.close()
+        logger.debug("Finished writing xyz coordinates...")
 
     @staticmethod
     def read_xyz_trj(inpstr=None):
+        logger.debug("Reading xyz trajectory ...")
         if isinstance(inpstr,str):
             lines = inpstr.split("\n")
         elif isinstance(inpstr,TextIOWrapper):
@@ -70,8 +82,10 @@ class Molecule():
         while linecount < len(lines):
             num_atoms = int(lines[linecount])
             molecules.append( "".join(lines[linecount:linecount + num_atoms + 2]))
-            linecount += num_atoms + 2           
+            linecount += num_atoms + 2   
+        logger.debug("Finished reading xyz trajectory ...")        
         return(molecules)
+        
 
 
 class OniomMolecule(Molecule):
