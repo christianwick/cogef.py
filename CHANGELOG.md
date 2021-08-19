@@ -1,5 +1,9 @@
-
 # Changelog
+
+## 1.0.2 Cogef.py 19.08.21
+
+### Fixed
+- error terminations are now detected in manual_cogef and targeted_cogef. 
 
 ## 1.0.1 Cogef.py 11.08.21
 
