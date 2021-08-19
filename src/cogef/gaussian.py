@@ -216,3 +216,15 @@ def read_stationary_from_log(filename):
             if "-- Stationary point found." in line:
                 stationary = True
     return(stationary)
+
+def check_normal_termination_from_log(filename):
+    last_line = ""
+    error = True
+    with open(filename,"r") as of:
+        while True:
+            line = of.readline()
+            if not line: break
+            else: last_line = line
+    if "Normal termination" in last_line:
+        error = False
+    return error

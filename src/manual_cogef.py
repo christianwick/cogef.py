@@ -91,6 +91,7 @@ if __name__ == "__main__":
 
     instab=False
     stationary=False
+    error=False
     for ii in range(args.restart, args.cycles):
         logger.info("Starting cycle {}".format(ii))
         stationary_cycles = 0
@@ -105,6 +106,7 @@ if __name__ == "__main__":
                           route_args = opt_args)
                 rungauss = subprocess.run(["cogef_rung16",filename+".com"], check=True, capture_output=True, text=True)
                 xyz = subprocess.run(["gxyz",filename+".log","-l","--input"], capture_output=True, text=True)
+                error = gaussian.check_normal_termination_from_log(filename+".log")
                 instab = gaussian.read_instability_from_log(filename+".log")
                 stationary = gaussian.read_stationary_from_log(filename+".log")
                 if not args.no_opt:
@@ -115,6 +117,11 @@ if __name__ == "__main__":
                     logger.warning("Instability detected at cycle {} {} {}".format(ii, stationary_cycles, instab_cycles, ))
                     os.rename(filename+".log", "{}_{}_{}.log".format(filename, stationary_cycles, instab_cycles))
                     instab_cycles +=1
+                elif error:
+                    # at the moment, we will treat error terminations as instability and try another instab cycle.
+                    logger.warning("Error termination detected at cycle {} {} {}".format(ii, stationary_cycles, instab_cycles, ))
+                    os.rename(filename+".log", "{}_{}_{}.log".format(filename, stationary_cycles, instab_cycles))
+                    instab_cycles += 1
                 else:
                     logger.info("Wavefunction is stable.")
                     break
