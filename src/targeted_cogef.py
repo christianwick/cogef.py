@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" fragement_cogef.py - read xyz files and write gaussian input with modifed coords
+""" targeted_cogef.py - read xyz files and write gaussian input with modifed coords
  
 """
 
@@ -42,6 +42,7 @@ if __name__ == "__main__":
     group_tweaks.add_argument("-dp", help="add perturbation for fragment atoms", default=1.0,type=float)
     group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1",type=int, nargs="+", default=[1,2,3,4])
     group_tweaks.add_argument("-cycles", help="number n of cycles to run", type=int, default=1)
+    group_tweaks.add_argument("-reverse", help="reverse direction", action="store_true", default=False)
     group_tweaks.add_argument("-max_instab_cycles", help="number n of cycles to rerun after instability has been found", type=int, default=5)
     group_tweaks.add_argument("-max_stationary_cycles", help="number n of cycles to rerun after no stationary point has been found", type=int, default=5)
     group_tweaks.add_argument("-restart", help="restart at cycle n", type=int, default=0)
@@ -91,7 +92,12 @@ if __name__ == "__main__":
 
     instab=False
     stationary=False
-    for ii in range(args.restart, args.cycles):
+    # cogef main loop
+    if args.reverse:
+        loop_range = range(args.restart, abs(args.restart-args.cycles) ,-1)
+    else:
+        loop_range = range(args.restart, args.cycles)
+    for ii in loop_range:
         logger.info("Starting cycle {}".format(ii))
         stationary_cycles = 0
         while stationary_cycles <= args.max_stationary_cycles:
