@@ -1,5 +1,6 @@
 
 import logging
+import re
 
 from collections import OrderedDict
 from cogef.molecule import Molecule
@@ -196,7 +197,63 @@ class OniomInput(GaussianInput):
         pass
         #self.molecule = OniomMolecule(): 
         
+class CheckGaussianLogfile():
+    """ Process gaussian log files and check for errors
 
+        self.instability -> boolean (True if an instability has been found)
+        self.stationary -> boolean (True if stationary point has been found)
+        self.error -> boolean (True if last termination was not a Normal termination.)
+    """
+    def __init__(self, filename):
+        logger.debug("Initialise CheckGaussianLogfile class")
+        self._find_normal_termination = re.compile("Normal termination")
+        self._find_instab = re.compile("The wavefunction has an internal instability.")
+        self._find_stable = re.compile("The wavefunction is stable under the perturbations considered.")
+        self._find_stationary = re.compile("-- Stationary point found.")
+
+        self.filename = filename
+        self.instability = False
+        self.stationary = False
+        self.error = False
+    
+    def read_log(self):
+        last_line = ""
+        with open(self.filename,"r") as of:
+            while True:
+                line = of.readline()
+                if not line: break
+                self._read_stationary(line)
+                self._read_instability(line)
+                last_line = line
+            # we check only the last line for error terminations:
+            self._check_termination(last_line)
+        logger.info(f"Final wfn is stable: {not self.instability}")
+        logger.info(f"Found stationary point: {self.stationary}")
+        logger.info(f"Normal termination: {not self.error}")
+
+    def _read_instability(self,line):
+        if self._find_instab.search(line):
+            logger.warning(f"Instability detected in file {self.filename}")
+            self.instability = True
+        elif self._find_stable.search(line):
+            logger.debug(f"Detected a stable Wavefunction in file {self.filename}")
+            self.instability = False
+
+    def _read_stationary(self,line):
+        if self._find_stationary.search(line):
+            logger.debug(f"Stationary point found in file {self.filename}")
+            self.stationary = True
+
+    def _check_termination(self,line):
+        if self._find_normal_termination.search(line):
+            logger.debug(f"Normal termination detected in file {self.filename}")
+            self.error = False
+        else: 
+            logger.warning(f"Error termination detected in file {self.filename}")
+            self.error = True 
+        
+#the following functions are kept for backwards compatibility and will
+#be removed in future versions
 def read_instability_from_log(filename):
     instab=False
     with open(filename,"r") as of:
