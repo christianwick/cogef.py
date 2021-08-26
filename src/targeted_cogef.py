@@ -42,10 +42,11 @@ if __name__ == "__main__":
     group_tweaks.add_argument("-dp", help="add perturbation for fragment atoms", default=1.0,type=float)
     group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1",type=int, nargs="+", default=[1,2,3,4])
     group_tweaks.add_argument("-cycles", help="number n of cycles to run", type=int, default=1)
-    group_tweaks.add_argument("-reverse", help="reverse direction", action="store_true", default=False)
+    group_tweaks.add_argument("-reverse", help="reverse direction start at n", type=int, default=0)
     group_tweaks.add_argument("-max_instab_cycles", help="number n of cycles to rerun after instability has been found", type=int, default=5)
     group_tweaks.add_argument("-max_stationary_cycles", help="number n of cycles to rerun after no stationary point has been found", type=int, default=5)
-    group_tweaks.add_argument("-restart", help="restart at cycle n", type=int, default=0)
+    group_tweaks.add_argument("-restart", help="restart at cycle n. (Note:"+
+        "If you want to restart in reverse direction use the reverse option!)", type=int, default=0)
     group_tweaks.add_argument("-symm", help="move atoms symmetrically", action="store_true", default=False)
 
     group_deprecated = parser.add_argument_group("deprecated")
@@ -94,9 +95,11 @@ if __name__ == "__main__":
     stationary=False
     # cogef main loop
     if args.reverse:
-        loop_range = range(args.restart, abs(args.restart-args.cycles) ,-1)
+        args.dx = - abs(args.dx)
+        # we loop from reverse n cycles backwards. smallest point is 000
+        loop_range = range(args.reverse, max(-1, args.reverse - args.cycles -1 ), -1)
     else:
-        loop_range = range(args.restart, args.cycles)
+        loop_range = range(args.restart, args.cycles +1 )
     for ii in loop_range:
         logger.info("Starting cycle {}".format(ii))
         stationary_cycles = 0
@@ -144,5 +147,5 @@ if __name__ == "__main__":
 
     # STOP LOGGING HERE
     logger.info("Summary of cogef calculation:" )
-    logger.info("Total cycles: {}".format(ii))
+    logger.info("Total cycles: {}".format(abs(ii - args.reverse - args.restart )))
     logger.info("Finished Manual Cogef. " )
