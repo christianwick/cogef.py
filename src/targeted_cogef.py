@@ -37,6 +37,9 @@ if __name__ == "__main__":
     group_gaussian.add_argument("-calcfc", help="calculate Force Constants for difficult cases", choices=["CalcFC","RecalcFC=5","CalcAll", "None"], default="CalcFC")
     group_gaussian.add_argument("-rfo", help="use rfo",  choices=["RFO", "None"], default="RFO")
 
+    group_output = parser.add_argument_group("Output options")
+    group_output.add_argument("-trajectory", help="write trajectory to file", type=argparse.FileType("a"), default=None)
+
     group_tweaks = parser.add_argument_group("cogef")
     group_tweaks.add_argument("-dx", help="increment", default=0.02,type=float)
     group_tweaks.add_argument("-dp", help="add perturbation for fragment atoms", default=1.0,type=float)
@@ -140,6 +143,10 @@ if __name__ == "__main__":
             else:
                 logger.info("Optimisation completed.")
                 logger.debug("Optimised Coordinates: \n" + str(data.molecule))
+                # write actual structure to disk.
+                data.molecule.write_xyz(f"checkpoint.xyz",comment=f"checkpoint {ii:03d}")
+                if args.trajectory:
+                    data.molecule.write_xyz(args.trajectory,comment=f"{ii:03d}")
                 break           
         data.molecule.coordinates = modstruct.mod_fragments(data.molecule.coordinates, atom1, atom2, args.dx, symmetric=args.symm, dp=args.dp, fragment=args.fragment)
         #data.molecule.write_xyz(sys.stdout)

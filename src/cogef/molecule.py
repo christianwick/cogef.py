@@ -50,10 +50,10 @@ class Molecule():
         self.coordinates = np.array(coords)
         logger.debug("Finished reading coordinates.")
     
-    def write_xyz(self,filename,comment=""):
-        logger.debug("Writing xyz coordinates...")
+    def write_xyz(self,filename,comment="", write_mode="w"):
+        logger.debug(f"Writing xyz coordinates to file {str(filename)}...")
         if isinstance(filename,str):
-            of = open(filename,"w")
+            of = open(filename, write_mode)
             need_to_close = True
         else:
             of = filename 
