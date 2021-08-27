@@ -119,11 +119,12 @@ if __name__ == "__main__":
                           instability = instab,
                           route_args = opt_args)
                 rungauss = subprocess.run(["cogef_rung16",filename+".com"], check=True, capture_output=True, text=True)
-                xyz = subprocess.run(["gxyz",filename+".log","-l","--input"], capture_output=True, text=True)
+                # read gaussian log file
                 glog = gaussian.CheckGaussianLogfile(filename+".log")
                 glog.read_log()
                 if not args.no_opt:
-                    data.molecule.read_xyz(xyz.stdout)
+                    data.molecule.elements = glog.molecule.elements
+                    data.molecule.coordinates = glog.molecule.coordinates
                     #args.no_opt = False
                 # check for instability or break out 
                 if glog.instability:

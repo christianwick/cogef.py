@@ -213,6 +213,7 @@ class CheckGaussianLogfile():
 
         self._find_spin = re.compile("S\*\*2 before annihilation ")
         self._find_scf_energy = re.compile("SCF Done:")
+        self._find_struct = re.compile("Input orientation")
 
         self.filename = filename
         self.instability = False
@@ -221,9 +222,11 @@ class CheckGaussianLogfile():
 
         self.spin = 0.0
         self.scf_energy = 0.0
+        self.molecule = Molecule()
     
     def read_log(self):
         last_line = ""
+        logger.debug(f"Reading gaussian log file {self.filename}")
         with open(self.filename,"r") as of:
             while True:
                 line = of.readline()
@@ -235,6 +238,7 @@ class CheckGaussianLogfile():
                 # check for important data
                 self._read_spin(line)
                 self._read_scf_energy(line)
+                self._read_struct(line, of)
                 last_line = line
             # we check only the last line for error terminations:
             self._check_termination(last_line)
@@ -273,7 +277,40 @@ class CheckGaussianLogfile():
         if self._find_scf_energy.search(line):
             temp = line.split()
             self.scf_energy = temp[2] + " = " + temp[4]
-            
+
+    def _read_struct(self, line, fin):
+        """ 
+        Read structure from gaussian log files.
+        
+        input:  fin = open file read
+                line = string
+        """
+        if self._find_struct.search(line):
+            self.molecule.read_gaussian_raw_coords(self._read_geom(fin))
+
+    @staticmethod
+    def _read_geom(fin,reg=re.compile("----")):
+        """
+        Read geometry blocks in gaussian log files
+
+        input:  fin = open file read
+                reg = regex
+
+        returns: raw_coords = list
+        """
+        raw_coords = []
+        fin.readline()
+        one = fin.readline().split(maxsplit=3)
+        two = fin.readline().split(maxsplit=3)
+        #title = [ one[x] + " " + two[x].strip() for x in range(4)  ]
+        fin.readline()
+        while True:
+            line = fin.readline()
+            if ( not line ) or reg.search(line): break 
+            raw_coords.append(line)
+        return(raw_coords)
+
+
 
         
 #the following functions are kept for backwards compatibility and will

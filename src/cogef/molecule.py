@@ -5,6 +5,7 @@ import logging
 
 from io import TextIOWrapper
 
+from cogef.constants import PSE
 
 logger = logging.getLogger("molecule")
 
@@ -60,13 +61,30 @@ class Molecule():
             need_to_close = False
         num_atoms=len(self.coordinates)
         of.write("{:} \n".format(num_atoms))
-        of.write("{:20s} \n".format(comment.strip()[:20]))
+        of.write("{:80s} \n".format(comment.strip()[:80]))
         for ii in range(num_atoms):
             of.write("{:10s} {:14.8f} {:14.8f} {:14.8f} \n".format(
                 str(self.elements[ii]), *self.coordinates[ii]))
         if need_to_close:
             of.close()
         logger.debug("Finished writing xyz coordinates...")
+    
+    def read_gaussian_raw_coords(self,raw_coords):
+        """
+        convert raw coordinate string from gaussian log files to the molcule format
+        since gaussian uses atom numbers instead of element names we convert them 
+        with our implemented PSE.
+
+        input:  raw_coords = list
+        """
+        elements = []
+        coords = []
+        for line in raw_coords:
+            temp = line.split()
+            elements.append(PSE[int(temp[1])])
+            coords.append([float(x) for x in temp[3:]])
+        self.elements = elements
+        self.coordinates = np.array(coords)
 
     @staticmethod
     def read_xyz_trj(inpstr=None):
