@@ -242,11 +242,11 @@ class CheckGaussianLogfile():
                 last_line = line
             # we check only the last line for error terminations:
             self._check_termination(last_line)
-        logger.info(f"Final wfn is stable: {not self.instability}")
+        logger.info(f"WFN is stable: {not self.instability}")
         logger.info(f"Found stationary point: {self.stationary}")
         logger.info(f"Normal termination: {not self.error}")
-        logger.info(f"Final Spin Contamination: S**2 = {self.spin}")
-        logger.info(f"Final SCF Energy: {self.scf_energy}")
+        logger.info(f"S**2 = {self.spin}")
+        logger.info(f"SCF Energy: {self.scf_energy}")
 
     def _read_instability(self,line):
         if self._find_instab.search(line):
@@ -287,6 +287,12 @@ class CheckGaussianLogfile():
         """
         if self._find_struct.search(line):
             self.molecule.read_gaussian_raw_coords(self._read_geom(fin))
+
+    def comment_line(self, point=None, *args):
+        comment = f"{self.scf_energy} | S**2 = {self.spin:.3f}"
+        if isinstance(point,int):
+            comment += f" | point {point:03d}"
+        return(comment)
 
     @staticmethod
     def _read_geom(fin,reg=re.compile("----")):

@@ -149,14 +149,14 @@ if __name__ == "__main__":
                 logger.debug("Optimised Coordinates: \n" + str(data.molecule))
                 # write actual structure to disk.
                 logger.info(f"Writing checkpoint.xyz")
-                data.molecule.write_xyz(f"checkpoint.xyz",comment=f"checkpoint {ii:03d} S**2 = {glog.spin} SCF_En = {glog.scf_energy}")
+                data.molecule.write_xyz(f"checkpoint.xyz",comment=glog.comment_line(point=ii))
                 if args.trajectory:
                     logger.info(f"Adding structure to trajectory {args.trajectory}")
-                    data.molecule.write_xyz(args.trajectory,comment=f"{ii:03d} S**2 = {glog.spin} SCF_En = {glog.scf_energy}")
+                    data.molecule.write_xyz(args.trajectory, comment=glog.comment_line(point=ii))
                 # we check for spin contamination and write the first structure with spin contamination to disk.
                 if not found_spin_contamination and glog.spin > 0.5 and not args.reverse: 
-                    logger.info("Found spin contamination. Saving structure to disk...")
-                    data.molecule.write_xyz(f"start_reverse_{ii:03d}.xyz", comment = f"{ii:03d} S**2 = {glog.spin} SCF_En = {glog.scf_energy}")
+                    logger.info("Detected homolytic bond scission. Saving structure to disk...")
+                    data.molecule.write_xyz(f"start_reverse_{ii:03d}.xyz", comment=glog.comment_line(point=ii))
                     found_spin_contamination = True
                 break           
         data.molecule.coordinates = modstruct.mod_fragments(data.molecule.coordinates, atom1, atom2, args.dx, symmetric=args.symm, dp=args.dp, fragment=args.fragment)
