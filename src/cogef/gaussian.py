@@ -211,10 +211,16 @@ class CheckGaussianLogfile():
         self._find_stable = re.compile("The wavefunction is stable under the perturbations considered.")
         self._find_stationary = re.compile("-- Stationary point found.")
 
+        self._find_spin = re.compile("S\*\*2 before annihilation ")
+        self._find_scf_energy = re.compile("SCF Done:")
+
         self.filename = filename
         self.instability = False
         self.stationary = False
         self.error = False
+
+        self.spin = 0.0
+        self.scf_energy = 0.0
     
     def read_log(self):
         last_line = ""
@@ -222,14 +228,21 @@ class CheckGaussianLogfile():
             while True:
                 line = of.readline()
                 if not line: break
+                # check for errors
                 self._read_stationary(line)
                 self._read_instability(line)
+
+                # check for important data
+                self._read_spin(line)
+                self._read_scf_energy(line)
                 last_line = line
             # we check only the last line for error terminations:
             self._check_termination(last_line)
         logger.info(f"Final wfn is stable: {not self.instability}")
         logger.info(f"Found stationary point: {self.stationary}")
         logger.info(f"Normal termination: {not self.error}")
+        logger.info(f"Final Spin Contamination: S**2 = {self.spin}")
+        logger.info(f"Final SCF Energy: {self.scf_energy}")
 
     def _read_instability(self,line):
         if self._find_instab.search(line):
@@ -251,6 +264,17 @@ class CheckGaussianLogfile():
         else: 
             logger.warning(f"Error termination detected in file {self.filename}")
             self.error = True 
+    
+    def _read_spin(self, line):
+        if self._find_spin.search(line):
+            self.spin = float(line.split()[3].strip(","))
+    
+    def _read_scf_energy(self, line):
+        if self._find_scf_energy.search(line):
+            temp = line.split()
+            self.scf_energy = temp[2] + " = " + temp[4]
+            
+
         
 #the following functions are kept for backwards compatibility and will
 #be removed in future versions

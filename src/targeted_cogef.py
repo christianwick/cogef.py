@@ -94,6 +94,9 @@ if __name__ == "__main__":
     data.molecule.read_xyz(args.xyz)
     logger.info("Initial Coordinates: \n" + str(data.molecule))
 
+    # to check for spin contamination 
+    found_spin_contamination = False
+
     instab=False
     stationary=False
     # cogef main loop
@@ -144,9 +147,16 @@ if __name__ == "__main__":
                 logger.info("Optimisation completed.")
                 logger.debug("Optimised Coordinates: \n" + str(data.molecule))
                 # write actual structure to disk.
-                data.molecule.write_xyz(f"checkpoint.xyz",comment=f"checkpoint {ii:03d}")
+                logger.info(f"Writing checkpoint.xyz")
+                data.molecule.write_xyz(f"checkpoint.xyz",comment=f"checkpoint {ii:03d} S**2 = {glog.spin} SCF_En = {glog.scf_energy}")
                 if args.trajectory:
-                    data.molecule.write_xyz(args.trajectory,comment=f"{ii:03d}")
+                    logger.info(f"Adding structure to trajectory {args.trajectory}")
+                    data.molecule.write_xyz(args.trajectory,comment=f"{ii:03d} S**2 = {glog.spin} SCF_En = {glog.scf_energy}")
+                # we check for spin contamination and write the first structure with spin contamination to disk.
+                if not found_spin_contamination and glog.spin > 0.5 and not args.reverse: 
+                    logger.info("Found spin contamination. Saving structure to disk...")
+                    data.molecule.write_xyz(f"start_reverse_{ii:03d}.xyz", comment = f"{ii:03d} S**2 = {glog.spin} SCF_En = {glog.scf_energy}")
+                    found_spin_contamination = True
                 break           
         data.molecule.coordinates = modstruct.mod_fragments(data.molecule.coordinates, atom1, atom2, args.dx, symmetric=args.symm, dp=args.dp, fragment=args.fragment)
         #data.molecule.write_xyz(sys.stdout)
