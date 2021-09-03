@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 Cogef.py 03.09.21
+### added
+- looging in gausp.py
+- logging in simple_orca_sp.py
+- updated manual_cogef to use same modules as targeted_cogef.py
+- added spin checking to manual_cogef
+
 ## 1.1.0 Cogef.py 27.08.21
 ### added
 - parsing of gaussian log files in gaussian module
