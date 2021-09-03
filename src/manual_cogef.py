@@ -41,6 +41,9 @@ if __name__ == "__main__":
     group_gaussian.add_argument("-calcfc", help="calculate Force Constants for difficult cases", choices=["CalcFC","RecalcFC=5","CalcAll", "None"], default="CalcFC")
     group_gaussian.add_argument("-rfo", help="use rfo",  choices=["RFO", "None"], default="RFO")
 
+    group_output = parser.add_argument_group("Output options")
+    group_output.add_argument("-trajectory", help="write trajectory to file", type=argparse.FileType("a"), default=None)
+
     group_tweaks = parser.add_argument_group("cogef")
     group_tweaks.add_argument("-dx", help="increment", default=0.02,type=float)
     group_tweaks.add_argument("-cycles", help="number n of cycles to run", type=int, default=1)
@@ -89,6 +92,9 @@ if __name__ == "__main__":
     data.molecule.read_xyz(args.xyz)
     logger.info("Initial Coordinates: \n" + str(data.molecule))
 
+    # to check for spin contamination 
+    found_spin_contamination = False
+
     instab=False
     stationary=False
     error=False
@@ -105,19 +111,19 @@ if __name__ == "__main__":
                           instability = instab,
                           route_args = opt_args)
                 rungauss = subprocess.run(["cogef_rung16",filename+".com"], check=True, capture_output=True, text=True)
-                xyz = subprocess.run(["gxyz",filename+".log","-l","--input"], capture_output=True, text=True)
-                error = gaussian.check_normal_termination_from_log(filename+".log")
-                instab = gaussian.read_instability_from_log(filename+".log")
-                stationary = gaussian.read_stationary_from_log(filename+".log")
+                # read gaussian log file
+                glog = gaussian.CheckGaussianLogfile(filename+".log")
+                glog.read_log()
                 if not args.no_opt:
-                    data.molecule.read_xyz(xyz.stdout)
+                    data.molecule.elements = glog.molecule.elements
+                    data.molecule.coordinates = glog.molecule.coordinates
                     #args.no_opt = False
                 # check for instability or break out 
-                if instab:
+                if glog.instability:
                     logger.warning("Instability detected at cycle {} {} {}".format(ii, stationary_cycles, instab_cycles, ))
                     os.rename(filename+".log", "{}_{}_{}.log".format(filename, stationary_cycles, instab_cycles))
                     instab_cycles +=1
-                elif error:
+                elif glog.error:
                     # at the moment, we will treat error terminations as instability and try another instab cycle.
                     logger.warning("Error termination detected at cycle {} {} {}".format(ii, stationary_cycles, instab_cycles, ))
                     os.rename(filename+".log", "{}_{}_{}.log".format(filename, stationary_cycles, instab_cycles))
@@ -126,14 +132,25 @@ if __name__ == "__main__":
                     logger.info("Wavefunction is stable.")
                     break
             # check for stationary point or break out 
-            if not stationary:
+            if not glog.stationary:
                 logger.warning("No Stationary point found at cycle {} {} {}".format(ii, stationary_cycles, instab_cycles, ))
                 os.rename(filename+".log", "{}_{}_{}.log".format(filename, stationary_cycles, instab_cycles))
                 stationary_cycles += 1
             else:
-                logger.info ("Optimisation completed.")
+                logger.info("Optimisation completed.")
                 logger.debug("Optimised Coordinates: \n" + str(data.molecule))
-                break    
+                # write actual structure to disk.
+                logger.info(f"Writing checkpoint.xyz")
+                data.molecule.write_xyz(f"checkpoint.xyz",comment=glog.comment_line(point=ii))
+                if args.trajectory:
+                    logger.info(f"Adding structure to trajectory {args.trajectory}")
+                    data.molecule.write_xyz(args.trajectory, comment=glog.comment_line(point=ii))
+                # we check for spin contamination and write the first structure with spin contamination to disk.
+                if not found_spin_contamination and glog.spin > 0.5 : 
+                    logger.info("Detected homolytic bond scission. Saving structure to disk...")
+                    data.molecule.write_xyz(f"start_reverse_{ii:03d}.xyz", comment=glog.comment_line(point=ii))
+                    found_spin_contamination = True
+                break        
         data.molecule.coordinates = modstruct.mod_single_atom(coords = data.molecule.coordinates, atom1 = atom1, atom2 = atom2,dx = args.dx,symmetric=args.symm)
         #data.molecule.write_xyz(sys.stdout)
         logger.debug("New Coordinates: \n" + str(data.molecule))
