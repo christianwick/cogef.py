@@ -34,9 +34,7 @@ def mod_atoms(coords,atom1,atom2,dx=0.02,symmetric=False):
     if len(coords[0]) == 4:
         elements = [x[0] for x in coords]
         coords = [[x[1],x[2],x[3]] for x in coords ]
-    mat = np.zeros([len(coords),3])
-    for ii,atom in enumerate(coords):
-        mat[ii,:] = [atom[1],atom[2],atom[3]]
+    mat = np.array(coords)
     r1 = mat[atom1,:]
     r2 = mat[atom2,:]
     vec = (r2 - r1) / np.linalg.norm(r2 - r1)
@@ -79,39 +77,39 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, dp=1.0, fragment=[0,1,2,3], sym
     if len(coords[0]) == 4:
         elements = [x[0] for x in coords]
         coords = [[x[1],x[2],x[3]] for x in coords ]
-    mat = np.zeros([len(coords),3])
-    for ii,atom in enumerate(coords):
-        mat[ii,:] = [atom[0],atom[1],atom[2]]
+    mat = np.array(coords)
     r1 = mat[atom1,:]
     r2 = mat[atom2,:]
     vec = (r2 - r1) / np.linalg.norm(r2 - r1)
-
-    new_coords = coords 
+    vec_dx = vec * dx
+    vec_dp = vec_dx * dp
+    u = np.zeros_like(mat)
     if symmetric:
+        vec_dx = vec_dx * 0.5
+        vec_dp = vec_dp * 0.5 
         for ii in range(len(coords)):
             if ii == atom1:
-                logger.debug("move atom1 {} in - direction.".format(ii+1) )
-                r = mat[ii,:] - vec * dx * 0.5
+                logger.debug("move anchor {} in - direction.".format(ii+1) )
+                u[ii,:] -=  vec_dx
             elif ii == atom2:
-                logger.debug("move atom2 {} in + direction.".format(ii+1) )
-                r = mat[ii,:] + vec * dx * 0.5
+                logger.debug("move anchor {} in + direction.".format(ii+1) )
+                u[ii,:] +=  vec_dx
             elif ii in fragment:
                 logger.debug("move atom {} in - direction.".format(ii+1) )
-                r = mat[ii,:] - vec * dx * dp * 0.5
+                u[ii,:] -=  vec_dp
             else:
                 logger.debug("move atom {} in + direction.".format(ii+1) )
-                r = mat[ii,:] + vec * dx * dp * 0.5
-            new_coords[ii] = [r[0],r[1],r[2]]
+                u[ii,:] +=  vec_dp
     else:    
         for ii in range(len(coords)):
-            if ii in fragment:
-                logger.debug("move atom {}".format(ii+1) )
-                if ii != atom1 and ii != atom2:
-                    r = mat[ii,:] - vec * dx * dp
-                else:
-                    r = mat[ii,:] - vec * dx
-                new_coords[ii] = [r[0],r[1],r[2]]
+            if ii == atom1:
+                logger.debug("move anchor {} in - direction.".format(ii+1) )
+                u[ii,:] -=  vec_dx
+            elif ii in fragment:
+                logger.debug("move atom {} in - direction.".format(ii+1) )
+                u[ii,:] -=  vec_dp
+    mat += u
     if len(coords[0]) == 4:
-        return(zip(elements,new_coords))
+        return(zip(elements,mat))
     else:
-        return(new_coords)
+        return(mat)
