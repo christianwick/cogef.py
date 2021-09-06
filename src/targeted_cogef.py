@@ -43,7 +43,7 @@ if __name__ == "__main__":
     group_tweaks = parser.add_argument_group("cogef")
     group_tweaks.add_argument("-dx", help="increment", default=0.02,type=float)
     group_tweaks.add_argument("-dp", help="add perturbation for fragment atoms", default=1.0,type=float)
-    group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1",type=int, nargs="+", default=[1,2,3,4])
+    group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1",type=int, nargs="+", default=[])
     group_tweaks.add_argument("-cycles", help="number n of cycles to run", type=int, default=1)
     group_tweaks.add_argument("-reverse", help="reverse direction start at n", type=int, default=0)
     group_tweaks.add_argument("-max_instab_cycles", help="number n of cycles to rerun after instability has been found", type=int, default=5)
@@ -51,6 +51,7 @@ if __name__ == "__main__":
     group_tweaks.add_argument("-restart", help="restart at cycle n. (Note:"+
         "If you want to restart in reverse direction use the reverse option!)", type=int, default=0)
     group_tweaks.add_argument("-symm", help="move atoms symmetrically", action="store_true", default=False)
+    group_tweaks.add_argument("-modred", help="modredundant section, separated by ';' ", default=None, type=str)
 
     group_deprecated = parser.add_argument_group("deprecated")
     group_deprecated.add_argument("-no_opt", help="!DEPRECATED! do not use optimized geometry in guess structure", action="store_true", default=False)
@@ -91,6 +92,12 @@ if __name__ == "__main__":
         opt_args["opt"].append("RFO")
     logger.info("Setting opt options: {}".format(opt_args))
 
+    # set mod redundant input
+    modredundant = ["{} {} F".format(args.atoms[0],args.atoms[1])]
+    if args.modred:
+        for section in args.modred.split(";"):
+            modredundant.append(section)
+
     data.molecule.read_xyz(args.xyz)
     logger.info("Initial Coordinates: \n" + str(data.molecule))
 
@@ -114,7 +121,7 @@ if __name__ == "__main__":
             while instab_cycles <= args.max_instab_cycles:
                 filename="cogef_{:03d}".format(int(ii))
                 with open(filename+".com", "w") as of:
-                    data.write_input(of,modredundant=["{} {} F".format(args.atoms[0],args.atoms[1])], 
+                    data.write_input(of,modredundant=modredundant, 
                           initial_stab_opt = not stationary,
                           instability = instab,
                           route_args = opt_args)
