@@ -25,20 +25,60 @@ H       1.321758    -0.908281    -0.885302
 H       2.179042     0.366372     0.000000 
 """
 
+xyz_file_separated="""11
+separated
+H      -4.67902300     0.36643337     0.00000000 
+C      -3.77965600    -0.26127563     0.00000000 
+H      -3.82176800    -0.90824963     0.88532100 
+H      -3.82176800    -0.90824963    -0.88532100 
+C       2.50004800     0.58978363     0.00000000 
+H       2.49994300     1.24850663     0.87891800 
+H       2.49994300     1.24850663    -0.87891800 
+C       3.77962700    -0.26131937     0.00000000 
+H       3.82175800    -0.90830337     0.88530200 
+H       3.82175800    -0.90830337    -0.88530200 
+H       4.67904200     0.36634963     0.00000000 
+"""
+
+
 if __name__ == "__main__":
     coords = GaussianInput()
+    # test mod_fragments in forward direction
     coords.molecule.read_xyz(xyz_file)
     counter = 0
     while counter < 10:
-        coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates, atom1 = 0, atom2 = 10, dx = 0.5, dp = 1.1, symmetric=True)
+        coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
+                atom1 = 0, atom2 = 10,
+                fragment=[0,1,2,3], 
+                dx = 0.5, 
+                dp = 1.0, 
+                symmetric=True)
         print("Cycle: {}".format(counter))
         print(str(coords.molecule))
         counter += 1
 
+    # test mod_fragments in forward direction
+    coords.molecule.read_xyz(xyz_file_separated)
+    counter = 0
+    while counter < 10:
+        coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
+                atom1 = 0, atom2 = 10,
+                fragment=[0,1,2,3], 
+                dx = -0.5, 
+                dp = 1.0, 
+                symmetric=True)
+        print("Cycle: {}".format(counter))
+        print(str(coords.molecule))
+        counter += 1
+
+
     coords.molecule.read_xyz(xyz_file)
     counter = 0
     while counter < 10:
-        coords.molecule.coordinates = mod_single_atom(coords = coords.molecule.coordinates, atom1 = 0, atom2 = 10, dx = 0.5, symmetric=True)
+        coords.molecule.coordinates = mod_single_atom(coords = coords.molecule.coordinates,
+                atom1 = 0, atom2 = 10,
+                dx = 0.5, 
+                symmetric=True)
         print("Cycle: {}".format(counter))
         print(str(coords.molecule))
         counter += 1
