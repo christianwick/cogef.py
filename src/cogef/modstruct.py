@@ -89,18 +89,18 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, dp=1.0, fragment=[0,1,2,3], sym
     new_coords = coords 
     if symmetric:
         for ii in range(len(coords)):
-            if ii in fragment:
+            if ii == atom1:
+                logger.debug("move atom1 {} in - direction.".format(ii+1) )
+                r = mat[ii,:] - vec * dx * 0.5
+            elif ii == atom2:
+                logger.debug("move atom2 {} in + direction.".format(ii+1) )
+                r = mat[ii,:] + vec * dx * 0.5
+            elif ii in fragment:
                 logger.debug("move atom {} in - direction.".format(ii+1) )
-                if ii != atom1 and ii != atom2:
-                    r = mat[ii,:] - vec * dx * dp * 0.5
-                else:
-                    r = mat[ii,:] - vec * dx * 0.5
+                r = mat[ii,:] - vec * dx * dp * 0.5
             else:
                 logger.debug("move atom {} in + direction.".format(ii+1) )
-                if ii != atom1 and ii != atom2:
-                    r = mat[ii,:] + vec * dx * dp * 0.5
-                else:
-                    r = mat[ii,:] + vec * dx * 0.5 
+                r = mat[ii,:] + vec * dx * dp * 0.5
             new_coords[ii] = [r[0],r[1],r[2]]
     else:    
         for ii in range(len(coords)):
