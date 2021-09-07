@@ -23,8 +23,8 @@ def mod_single_atom(coords,atom1,atom2,dx=0.02,symmetric=False):
         new_coords[atom1] = [new_r1[0], new_r1[1], new_r1[2]]
         new_coords[atom2] = [new_r2[0], new_r2[1], new_r2[2]]
     else:
-        new_r2 = r2 + vec * dx
-        new_coords[atom2] = [new_r2[0], new_r2[1], new_r2[2]]
+        new_r1 = r1 - vec * dx
+        new_coords[atom1] = new_r1
     if len(coords[0]) == 4:
         return(zip(elements,new_coords))
     else:

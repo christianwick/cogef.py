@@ -44,9 +44,10 @@ H       4.67904200     0.36634963     0.00000000
 if __name__ == "__main__":
     coords = GaussianInput()
     # test mod_fragments in forward direction
+    print("Testing mod_fragments in forward direction")
     coords.molecule.read_xyz(xyz_file)
     counter = 0
-    while counter < 10:
+    while counter < 2:
         coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
                 atom1 = 0, atom2 = 10,
                 fragment=[0,1,2,3], 
@@ -57,10 +58,11 @@ if __name__ == "__main__":
         print(str(coords.molecule))
         counter += 1
 
-    # test mod_fragments in forward direction
+    # test mod_fragments in reverse direction
+    print("Testing mod_fragments in reverse direction")
     coords.molecule.read_xyz(xyz_file_separated)
     counter = 0
-    while counter < 10:
+    while counter < 2:
         coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
                 atom1 = 0, atom2 = 10,
                 fragment=[0,1,2,3], 
@@ -72,12 +74,27 @@ if __name__ == "__main__":
         counter += 1
 
 
+    print("Test mod_single_atom")
     coords.molecule.read_xyz(xyz_file)
     counter = 0
-    while counter < 10:
+    while counter < 2:
         coords.molecule.coordinates = mod_single_atom(coords = coords.molecule.coordinates,
                 atom1 = 0, atom2 = 10,
                 dx = 0.5, 
+                symmetric=True)
+        print("Cycle: {}".format(counter))
+        print(str(coords.molecule))
+        counter += 1
+
+    print("Testing mod_fragments for single atom movement")
+    coords.molecule.read_xyz(xyz_file)
+    counter = 0
+    while counter < 2:
+        coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
+                atom1 = 0, atom2 = 10,
+                fragment=[], 
+                dx = 0.5, 
+                dp = 1.0, 
                 symmetric=True)
         print("Cycle: {}".format(counter))
         print(str(coords.molecule))
