@@ -1,3 +1,5 @@
+""" mulliken.py - read mulliken spin density and charges from qm log files """
+
 
 import logging
 

@@ -1,3 +1,5 @@
+""" molecule.py contains all Molecule classes """
+
 import numpy as np
 import sys
 

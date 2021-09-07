@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """ manual_cogef.py - read xyz files and write gaussian input with modifed coords
+
+**** DEPRECATED ****
+USE TARGETED COGEF INSTEAD
  
 """
 
@@ -70,6 +73,7 @@ if __name__ == "__main__":
     cogef_logging.logging_init(log_level = args.log_level, stream_level = args.stream_level)
     logger = logging.getLogger("manual_cogef")
     logger.info("Starting Manual Cogef .... " )
+    logger.warning("AS OF 7.9.2021 MANUAL COGEF IS NO LONGER MAINTAINED. USE TARGETED COGEF INSTEAD")
     logger.info("Version: {}".format(__version__))
     logger.info("Command line Arguments: ")
     for arg,value in (vars(args)).items():
