@@ -2,7 +2,7 @@
 """ fragement_cogef.py - read xyz files and write gaussian input with modifed coords
  
 """
-# Modif path so that cogef is visible
+# Modify path so that cogef is visible
 import sys, os
 sys.path.append(os.path.abspath(os.path.join('..')))
 
@@ -24,6 +24,18 @@ H       1.321758    -0.908281     0.885302
 H       1.321758    -0.908281    -0.885302 
 H       2.179042     0.366372     0.000000 
 """
+
+
+mulliken = """
+ Mulliken charges and spin densities with hydrogens summed into heavy atoms:
+               1          2
+     2  C    0.001520   0.012112
+     5  C   -0.011722   0.963967
+     8  C    0.025860  -0.776637
+    11  N   -0.171410  -0.179924
+    13  C    0.155753  -0.019517
+ Electronic spatial extent (au):  <R**2>=           1543.5704
+ """
 
 if __name__ == "__main__":
     print()
@@ -58,3 +70,20 @@ if __name__ == "__main__":
     print("\n\n")
     print("Test write_sp_input():")
     test.write_sp_input(of=sys.stdout)
+
+
+
+    # CheckGaussianLogfile
+    mylog = g.CheckGaussianLogfile("example.log")
+    mylog.read_log()
+
+    print(f"Reading File {mylog.filename}")
+
+    print(f"Instability: {mylog.instability}")
+    print(f"Error termination: {mylog.error}")
+    print(f"Stationary Point: {mylog.stationary}")
+    print(f"Structure: {mylog.molecule}")
+
+    print("Mulliken Data")
+    print(mylog.mulliken)
+
