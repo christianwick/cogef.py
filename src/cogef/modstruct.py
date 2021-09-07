@@ -47,16 +47,16 @@ def mod_atoms(coords,atom1,atom2,dx=0.02,symmetric=False):
         for ii in range(len(dist_mat_r1)):
             if dist_mat_r2[ii] < dist_mat_r1[ii] :
                 r = mat[ii,:] + vec * dx * 0.5
-                print("move atom {} in + direction.".format(ii+1) )
+                print("move atom {} in + direction.".format(ii) )
             else:
                 r = mat[ii,:] - vec * dx * 0.5
-                print("move atom {} in - direction.".format(ii+1) )
+                print("move atom {} in - direction.".format(ii) )
             new_coords[ii] = [coords[ii][0],r[0],r[1],r[2]]
     else:    
         for ii in range(len(dist_mat_r1)):
             if dist_mat_r2[ii] < dist_mat_r1[ii] :
                 r = mat[ii,:] + vec * dx
-                print("move atom {}".format(ii+1) )
+                print("move atom {}".format(ii) )
                 new_coords[ii] = [coords[ii][0],r[0],r[1],r[2]]
     if len(coords[0]) == 4:
         return(zip(elements,new_coords))
@@ -89,24 +89,24 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, dp=1.0, fragment=[0,1,2,3], sym
         vec_dp = vec_dp * 0.5 
         for ii in range(len(coords)):
             if ii == atom1:
-                logger.debug("move anchor {} in - direction.".format(ii+1) )
+                logger.debug("move anchor {} in - direction.".format(ii) )
                 u[ii,:] -=  vec_dx
             elif ii == atom2:
-                logger.debug("move anchor {} in + direction.".format(ii+1) )
+                logger.debug("move anchor {} in + direction.".format(ii) )
                 u[ii,:] +=  vec_dx
             elif ii in fragment:
-                logger.debug("move atom {} in - direction.".format(ii+1) )
+                logger.debug("move atom {} in - direction.".format(ii) )
                 u[ii,:] -=  vec_dp
             else:
-                logger.debug("move atom {} in + direction.".format(ii+1) )
+                logger.debug("move atom {} in + direction.".format(ii) )
                 u[ii,:] +=  vec_dp
     else:    
         for ii in range(len(coords)):
             if ii == atom1:
-                logger.debug("move anchor {} in - direction.".format(ii+1) )
+                logger.debug("move anchor {} in - direction.".format(ii) )
                 u[ii,:] -=  vec_dx
             elif ii in fragment:
-                logger.debug("move atom {} in - direction.".format(ii+1) )
+                logger.debug("move atom {} in - direction.".format(ii) )
                 u[ii,:] -=  vec_dp
     mat += u
     if len(coords[0]) == 4:
