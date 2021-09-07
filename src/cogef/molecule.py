@@ -94,6 +94,10 @@ class Molecule():
         self.elements = elements
         self.coordinates = np.array(coords)
 
+    def distance(self,atom1,atom2):
+        vec = self.coordinates[atom1] - self.coordinates[atom2] 
+        return(np.linalg.norm(vec))
+
     def _process_comment_line(self,line):
         """
         Try to extract information from xyz comment lines.

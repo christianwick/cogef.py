@@ -4,6 +4,7 @@ import re
 
 from collections import OrderedDict
 from cogef.molecule import Molecule
+from cogef.mulliken import Mulliken
 
 logger = logging.getLogger("gaussian")
 
@@ -214,6 +215,8 @@ class CheckGaussianLogfile():
         self._find_spin = re.compile("S\*\*2 before annihilation ")
         self._find_scf_energy = re.compile("SCF Done:")
         self._find_struct = re.compile("Input orientation")
+        self._find_mulliken = re.compile("Mulliken charges and spin densities:")
+        self._find_mulliken_h = re.compile("Mulliken charges and spin densities with hydrogens summed into heavy atoms:")
 
         self.filename = filename
         self.instability = False
@@ -223,6 +226,7 @@ class CheckGaussianLogfile():
         self.spin = 0.0
         self.scf_energy = 0.0
         self.molecule = Molecule()
+        self.mulliken = Mulliken()
     
     def read_log(self):
         last_line = ""
@@ -239,6 +243,7 @@ class CheckGaussianLogfile():
                 self._read_spin(line)
                 self._read_scf_energy(line)
                 self._read_struct(line, of)
+                self._read_mulliken_h(line, of)
                 last_line = line
             # we check only the last line for error terminations:
             self._check_termination(last_line)
@@ -248,6 +253,19 @@ class CheckGaussianLogfile():
         logger.info(f"S**2 = {self.spin}")
         logger.info(f"SCF Energy: {self.scf_energy}")
 
+    def check_bonding(self):
+        logger.debug(f"Check bonding...")
+        mul_spin_dens = self.mulliken.find_spin_larger_than(0.5)
+        if len(mul_spin_dens.atom_number) >= 2:
+            logger.info(f"Mulliken Spin densities larger than 0.5: \n{mul_spin_dens}")
+            # get atom numbers of min and max spin dens
+            mul_spin_dens.sort_by("spin")
+            min_mulliken = mul_spin_dens.atom_number[0] - 1
+            max_mulliken = mul_spin_dens.atom_number[-1] - 1 
+            dist = self.molecule.distance(min_mulliken,max_mulliken)
+            logger.info(f"Distance between atoms {min_mulliken +1 } and {max_mulliken + 1} = {dist:10.3f} A")
+        logger.debug(f"Finished check bonding.")
+        
     def _read_instability(self,line):
         if self._find_instab.search(line):
             logger.warning(f"Instability detected in file {self.filename}")
@@ -288,11 +306,41 @@ class CheckGaussianLogfile():
         if self._find_struct.search(line):
             self.molecule.read_gaussian_raw_coords(self._read_geom(fin))
 
+    def _read_mulliken_h(self, line, of):
+        """ 
+        Read MULLIKEN  data from gaussian log files with hydrogens summed into
+        heavy atoms
+        
+        input:  fin = open file read
+                line = string
+        """
+        if self._find_mulliken_h.search(line):
+            of.readline() # this is the line with 1 2
+            self.mulliken._read_gaussian_raw_data(
+                    self._read_mulliken_blocks(of,"Electronic spatial extent"))
+
     def comment_line(self, point=None, *args):
         comment = f"{self.scf_energy} | S**2 = {self.spin:.3f}"
         if isinstance(point,int):
             comment += f" | point {point:03d}"
         return(comment)
+    
+    @staticmethod
+    def _read_mulliken_blocks(of, term = ""):
+        """ 
+        Read Mulliken data from gaussian log files
+        Input:
+            of = open file read
+            term = str 
+        The file "of" will be read until "term" is found.
+        """
+        temp = []
+        while True:
+            line = of.readline()
+            if term in line or line == "":
+                break
+            temp.append(line)
+        return(temp)
 
     @staticmethod
     def _read_geom(fin,reg=re.compile("----")):

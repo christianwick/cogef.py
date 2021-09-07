@@ -58,6 +58,7 @@ if __name__ == "__main__":
     group_deprecated.add_argument("-fragment_guess", help="always generate a fragment guess", action="store_true", default=False)
 
     group_logging = parser.add_argument_group("logging")
+    group_logging.add_argument("-logfile", help="name of the logfile", type=str, default="job_cogef.log")
     group_logging.add_argument("-log_level", help="set the log level", choices=["DEBUG","INFO"], default="INFO")
     group_logging.add_argument("-stream_level", help="set the streaming level", choices=["DEBUG","INFO"], default="INFO")
 
@@ -69,7 +70,7 @@ if __name__ == "__main__":
 
     # START LOGGING HERE
     # this way no logs are created for e.g. -h or --version 
-    cogef_logging.logging_init(log_level = args.log_level, stream_level = args.stream_level)
+    cogef_logging.logging_init(log_file=args.logfile, log_level = args.log_level, stream_level = args.stream_level)
     logger = logging.getLogger("targeted_cogef")
     logger.info("Starting Targeted Cogef .... " )
     logger.info("Version: {}".format(__version__))
@@ -157,6 +158,7 @@ if __name__ == "__main__":
                 # write actual structure to disk.
                 logger.info(f"Writing checkpoint.xyz")
                 data.molecule.write_xyz(f"checkpoint.xyz",comment=glog.comment_line(point=ii))
+                glog.check_bonding()
                 if args.trajectory:
                     logger.info(f"Adding structure to trajectory {args.trajectory}")
                     data.molecule.write_xyz(args.trajectory, comment=glog.comment_line(point=ii))
