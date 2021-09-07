@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.0 Cogef.py 07.09.21
+### added
+- mulliken spin density is parsed and used to monitor which bond breaks
+- summary of spin density and distance between the atoms with largest spin density
+  is printed to the log file
+- log file name can be changed in targeted_cogef
+- targeted_cogef can read additional modredundant sections from the input
+
+### deprecated
+- manual_cogef is no longer maintained. use target cogef without fragment instead for
+  identical results
+- fragment_cogef is removed from the repository and no longer needed.
+
+### changed
+- modstruct: mod_single_atom will now move atom1 (if symm = False)
+
 ## 1.2.0 Cogef.py 03.09.21
 ### added
 - looging in gausp.py
