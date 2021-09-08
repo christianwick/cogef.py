@@ -100,6 +100,43 @@ class Molecule():
         vec = self.coordinates[atom1] - self.coordinates[atom2] 
         return(np.linalg.norm(vec))
 
+    def center_coordinates(self):
+        """ 
+        Center coordinates using the geometric center of all atoms
+        """
+        centroid = self.centroid(self.coordinates)
+        self.coordinates -= centroid
+
+    @staticmethod
+    def rmsd(coords1,coords2):
+        """
+        Compute the rmsd between two coordinate sets
+        
+        Input: 
+            coords1,coords2 = np.array() (shape (m,3))
+
+        Returns:
+            rmsd = float()
+        """
+        pair_distances = np.linalg.norm(coords1 - coords2,axis=1)
+        rmsd = np.sqrt( np.sum(pair_distances **2 )/ len(pair_distances) )
+        return(rmsd)
+
+    @staticmethod
+    def centroid(coords):
+        """
+        Compute the centroid of coordinates sets
+        
+        Input: 
+            coords = np.array() (shape (m,3))
+
+        Returns:
+            centroid = np.array (shape (1,3))
+        """
+        c = np.sum(coords, axis=0)
+        l = len(coords)
+        return(c/l)
+
     def _process_comment_line(self,line):
         """
         Try to extract information from xyz comment lines.
