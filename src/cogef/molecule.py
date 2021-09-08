@@ -137,6 +137,46 @@ class Molecule():
         l = len(coords)
         return(c/l)
 
+    @staticmethod
+    def kabsch(A,B):
+        """
+        Superimpose A on B using the kabsch algorithm
+        
+        see https://en.wikipedia.org/wiki/Kabsch_algorithm
+        and https://en.wikipedia.org/wiki/Wahba%27s_problem 
+
+        the kabsch algorithm has 3 steps:
+        1. center both molecules A B
+        2. compute the covariance Matrix H = A.T * B
+        3. compute the rotation matrix R with single-value-decomposition:
+            H = U S V.T
+            d = sign(det(U V.T) Note: U and V are orthogonal
+            R = U [[1,0,0],[0,1,0][0,0,d]] V.T
+        Input: 
+            A,B = np.array() (shape (m,3))
+
+        Returns:
+            A np.array() (shape (m,3))  : A rotated by R
+        """
+        # Center A and B
+        A -= Molecule.centroid(A)
+        B -= Molecule.centroid(B)
+        
+        # Compute covariance matrix h
+        h =  A.T @ B 
+        
+        #single-value-decomposition of h
+        u,s,vt = np.linalg.svd( h )
+        
+        # check for proper rotation
+        d = np.sign( np.linalg.det( u ) * np.linalg.det(vt) )
+
+        # compute rotation matrix r
+        e = np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,d]])
+        r = u @ e @ vt
+        A = A @ r
+        return(A)
+
     def _process_comment_line(self,line):
         """
         Try to extract information from xyz comment lines.
