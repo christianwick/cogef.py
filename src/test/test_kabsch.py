@@ -41,28 +41,13 @@ H      -1.91086     -0.75242      0.81140
 
 
 if __name__ == "__main__":
-    print("Testing mod_fragments in forward direction")
-    mol = Molecule()
-    mol.read_xyz(xyz_file)
-    print(mol)
-    print(f"Distance between H1 and H11 : {mol.distance(0,10)}")
-    print(f"Centroid: {mol.centroid(mol.coordinates)}")
-    print(f"RMSD : {mol.rmsd(mol.coordinates,mol.coordinates)}")
-    print("centering Molecule")
-    mol.center_coordinates()
-    print(mol)
-    print(f"Distance between H1 and H11 : {mol.distance(0,10)}")
-    print(f"Centroid: {mol.centroid(mol.coordinates)}")
+    mol1 = Molecule()
     mol2 = Molecule()
-    mol2.read_xyz(xyz_file)
-    print(f"RMSD : {mol.rmsd(mol2.coordinates,mol.coordinates)}")
-    mol3 = Molecule()
-    mol3.read_xyz(rotated_xyz)
-    print(f"RMSD ROTATED : {mol.rmsd(mol2.coordinates,mol3.coordinates)}")
-    mol3.coordinates = Molecule.kabsch(mol3.coordinates,mol2.coordinates)
-    print(mol3)
-    print(f"RMSD KABSCH : {mol.rmsd(mol2.coordinates,mol3.coordinates)}")
-
-
-
-
+    mol1.read_xyz(xyz_file)
+    mol2.read_xyz(rotated_xyz)
+    mol1.center_coordinates()
+    mol2.center_coordinates()
+    print(Molecule.rmsd(mol1.coordinates,mol2.coordinates))
+    mol1.coordinates = Molecule.kabsch(mol1.coordinates,mol2.coordinates)
+    print(Molecule.rmsd(mol1.coordinates,mol2.coordinates))
+    print(mol1,mol2)
