@@ -61,10 +61,12 @@ def find_lowest_point(point,trajectories):
 if __name__ == "__main__" :
     parser = argparse.ArgumentParser()
     parser.add_argument("xyzfiles",help="list of xyz files to compare", nargs="+", type=argparse.FileType("r"))
-    parser.add_argument("-oxyz",help="output xyz trajextory", default=sys.stdout)
+    parser.add_argument("-oxyz",help="output xyz trajextory", type=argparse.FileType("w"), default=sys.stdout)
+    parser.add_argument("-kabsch",help="center final trajectory with the kabsch algorithm", action="store_true", default=False)
+
     group_logging = parser.add_argument_group("logging")
     group_logging.add_argument("-log_level", help="set the log level", choices=["DEBUG","INFO"], default="INFO")
-    group_logging.add_argument("-stream_level", help="set the streaming level", choices=["DEBUG","INFO"], default="INFO")
+    group_logging.add_argument("-stream_level", help="set the streaming level", choices=["DEBUG","INFO","CRITICAL"], default="CRITICAL")
     
     args = parser.parse_args()
 
@@ -95,8 +97,12 @@ if __name__ == "__main__" :
     for point in sorted(point_set):
         data_point_with_lowest_en = find_lowest_point(point,trajectories)
         final_xyz_trj.append(data_point_with_lowest_en)
-
+    
+    ref = final_xyz_trj[0]
     # write the final trajectory
     for point in final_xyz_trj:
+        if args.kabsch:
+            point.coordinates = Molecule.kabsch(point.coordinates,ref.coordinates)
+            logger.info(f"RMSD to reference: {Molecule.rmsd(point.coordinates,ref.coordinates)}")
         point.write_xyz(args.oxyz,comment=point.comment,write_mode="a")          
 
