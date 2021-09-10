@@ -23,11 +23,15 @@ from cogef._version import __version__
 
 
 if __name__ == "__main__":
+    # setup argument parser
     parser = argparse.ArgumentParser()
     parser.add_argument("-xyztrj", required=True, help="xyz trajectory file", type=argparse.FileType('r'))
     parser.add_argument("-template", required=True, help="orca template", type=argparse.FileType('r'))
     parser.add_argument("-use_last_gbw", help="use last gbw file as input", action="store_true", default=False)
     parser.add_argument("-guess_orbs", help="use in guess orbs 'guess_orbs.gbw'", type=str, default="guess_orbs.gbw")
+    parser.add_argument("-start_at", help="start at number n", type=int, default="0")
+    parser.add_argument("-direction", help="run in reverse direction (starting at last xyz) or not", type=str, 
+        choices=["REVERSE","FORWARD"], default="REVERSE")
 
     group_logging = parser.add_argument_group("logging")
     group_logging.add_argument("-log_level", help="set the log level", choices=["DEBUG","INFO"], default="INFO")
@@ -46,19 +50,33 @@ if __name__ == "__main__":
     for arg,value in (vars(args)).items():
         logger.info("    -{:10s} : {}".format(arg,value))
 
-
+    # read in xyz trajectory and strip trailing coordinates
     xyztrj = molecule.Molecule.read_xyz_trj(args.xyztrj)
-    xyztrj.reverse()
+    xyztrj = xyztrj[args.start_at:]
     num_mols = len(xyztrj)
-    current = num_mols - 1
+    
+    # check the direction 
+    if args.direction == "REVERSE":
+        xyztrj.reverse()
+        current = num_mols - 1 
+    else:
+        current = args.start_at 
+
+    # read the template file and start the main loop
     template = args.template.read()
     for nn,xyz in enumerate(xyztrj):
+        # set last sp number and check direction
         last = current 
-        current = num_mols - nn - 1
+        if args.direction == "REVERSE":
+            current = num_mols - nn - 1 
+        else:
+            current = args.start_at + nn
+        # setup file name, read xyz coordinates and store them in a single file 
         filename = "sp_{:03d}".format(current)
         mol = molecule.Molecule()
         mol.read_xyz(xyz)
         mol.write_xyz(filename + ".xyz")
+        # replace STRINGS in orca template
         orca_inp = template.replace("REPLACE",filename)
         if args.use_last_gbw:
             if nn == 0:
@@ -66,9 +84,11 @@ if __name__ == "__main__":
             else:
                 gbw_guess = "sp_{:03d}.gbw".format(last)
             orca_inp = orca_inp.replace("LASTGBW",gbw_guess)
+        # write orca input file
         with open(filename+".inp", "w") as of:
             of.write(orca_inp)
+        # run orca 
         runorca = subprocess.run(["runorca_4_2",filename + ".inp"], check=True, capture_output=True, text=True)
 
     # STOP LOGGING HERE
-    logger.info("Finished gaussian single point calculations. " )
+    logger.info("Finished orca single point calculations. " )
