@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.0 Cogef.py 10.09.21
+### added
+#### simple_orca_sp.py: 
+  - start_at a certain point and go in FORWARD or REVERSE direction
+#### min_xyz_traj.py
+  - kabsch fitting of final trajectories
+#### molecule.py
+  - functions to compute the distance matrix
+  - functions to do KABSCH fitting
+  - functions to compute RMSD between structures
+
 ## 1.3.0 Cogef.py 07.09.21
 ### added
 - mulliken spin density is parsed and used to monitor which bond breaks
