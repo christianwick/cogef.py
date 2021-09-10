@@ -29,6 +29,7 @@ class Molecule():
         self.energy = None
         self.spin = None
         self.point = None
+        self.d_mat = None # distance matrix
 
     def __str__(self):
         string=""
@@ -99,6 +100,44 @@ class Molecule():
     def distance(self,atom1,atom2):
         vec = self.coordinates[atom1] - self.coordinates[atom2] 
         return(np.linalg.norm(vec))
+
+    def distance_matrix(self,broadcast=False):
+        """ 
+        we compute the distance matrix utilising
+        the broadcasting feature in numpy or utilising a simpler and slower code
+                
+        see: https://stackoverflow.com/questions/22720864/efficiently-calculating-a-euclidean-distance-matrix-using-numpy
+        (see also: scipy.spatial.distance_matrix for an alternative using scipy)
+
+        explanation of the broadcasting feature:
+        # None is here identical to np.newaxis
+        >>> a=np.array([[1,0,0],[1,0,1]])
+        >>> a.shape
+        (2, 3)
+        >>> a[None,:,:].shape
+        (1, 2, 3)
+        >>> a[:,None,:].shape
+        (2, 1, 3)
+        >>> d=a[None,:,:]-a[:,None,:]
+        >>> d
+        array([[[ 0,  0,  0],
+                [ 0,  0,  1]],
+
+               [[ 0,  0, -1],
+                [ 0,  0,  0]]])
+        >>> d.shape
+        (2, 2, 3)
+        """
+        if broadcast:
+            b = self.coordinates[None,:,:] - self.coordinates[:,None,:]
+            self.d_mat = np.linalg.norm(b, axis=2)
+        else:
+            N = len(self.coordinates)
+            b=[]
+            for na in range(N):
+                b.append(self.coordinates - self.coordinates[na]) # this uses also numpy broadcasting
+            b = np.array(b)
+            self.d_mat = np.linalg.norm(b, axis=2)
 
     def center_coordinates(self):
         """ 
