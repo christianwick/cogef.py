@@ -29,7 +29,7 @@ if __name__ == "__main__":
     parser.add_argument("-template", required=True, help="orca template", type=argparse.FileType('r'))
     parser.add_argument("-use_last_gbw", help="use last gbw file as input", action="store_true", default=False)
     parser.add_argument("-guess_orbs", help="use in guess orbs 'guess_orbs.gbw'", type=str, default="guess_orbs.gbw")
-    parser.add_argument("-start_at", help="start at number n", type=int, default="0")
+    parser.add_argument("-start_at", help="start at number n (-1 = last, default)", type=int, default=-1)
     parser.add_argument("-direction", help="run in reverse direction (starting at last xyz) or not", type=str, 
         choices=["REVERSE","FORWARD"], default="REVERSE")
 
@@ -49,28 +49,35 @@ if __name__ == "__main__":
     logger.info("Command line Arguments: ")
     for arg,value in (vars(args)).items():
         logger.info("    -{:10s} : {}".format(arg,value))
-
-    # read in xyz trajectory and strip trailing coordinates
-    xyztrj = molecule.Molecule.read_xyz_trj(args.xyztrj)
-    xyztrj = xyztrj[args.start_at:]
-    num_mols = len(xyztrj)
     
-    # check the direction 
-    if args.direction == "REVERSE":
-        xyztrj.reverse()
-        current = num_mols - 1 
-    else:
-        current = args.start_at 
 
+
+    # read in xyz trajectory 
+    xyztrj = molecule.Molecule.read_xyz_trj(args.xyztrj)
+    
+    # we set the last structure
+    if args.start_at == -1 :
+        args.start_at = len(xyztrj) -1
+        print(len(xyztrj) ,args.start_at)
+    # check the direction and strip trailing coordinates
+    if args.direction == "REVERSE":
+        xyztrj = xyztrj[:args.start_at+1]
+        print(len(xyztrj))
+        xyztrj.reverse()   
+    else:
+        xyztrj = xyztrj[args.start_at:]
+        
+    current = args.start_at
     # read the template file and start the main loop
     template = args.template.read()
     for nn,xyz in enumerate(xyztrj):
         # set last sp number and check direction
         last = current 
         if args.direction == "REVERSE":
-            current = num_mols - nn - 1 
+            current = args.start_at - nn  
         else:
             current = args.start_at + nn
+        logger.info(f"starting cycle {current:03d}")
         # setup file name, read xyz coordinates and store them in a single file 
         filename = "sp_{:03d}".format(current)
         mol = molecule.Molecule()
