@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1 Cogef.py 11.09.21
+### fixed
+-simple_orca_sp.py: reverse direction works now as expected
+
 ## 1.4.0 Cogef.py 10.09.21
 ### added
 #### simple_orca_sp.py: 
