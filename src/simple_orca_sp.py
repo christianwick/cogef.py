@@ -58,11 +58,9 @@ if __name__ == "__main__":
     # we set the last structure
     if args.start_at == -1 :
         args.start_at = len(xyztrj) -1
-        print(len(xyztrj) ,args.start_at)
     # check the direction and strip trailing coordinates
     if args.direction == "REVERSE":
         xyztrj = xyztrj[:args.start_at+1]
-        print(len(xyztrj))
         xyztrj.reverse()   
     else:
         xyztrj = xyztrj[args.start_at:]
