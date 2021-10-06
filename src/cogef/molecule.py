@@ -235,6 +235,7 @@ class Molecule():
 
     @staticmethod
     def read_xyz_trj(inpstr=None):
+        """ read in an xyz trj file and return a list of the single xyz files """
         logger.debug("Reading xyz trajectory ...")
         if isinstance(inpstr,str):
             lines = inpstr.split("\n")
