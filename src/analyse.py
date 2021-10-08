@@ -75,7 +75,7 @@ class analyse_cogef():
         self.v_eff_label = []
         self.dist_tupl = []
 
-    def fill_with_molecules(self,trajectories):
+    def fill_with_molecules(self,trajectories, filter_en = False):
         for nn, mol in enumerate(trajectories):
             self.energies.append(mol.energy)
             self.spin.append(mol.spin)
@@ -83,6 +83,8 @@ class analyse_cogef():
             self.num_struc.append(nn)
         self.energies = np.array(self.energies)
         self.rel_en_kj_mol = self._compute_rel_energy(self.energies)
+        if isinstance(filter_en, float):
+            self._filter_data_by_energy(filter_en)
 
     @staticmethod
     def _compute_rel_energy(energies,conv_factor=constants.hartree_to_kJ_mol):
@@ -107,7 +109,6 @@ class analyse_cogef():
             work = force * distances * constants.nNm_to_kJ_mol  # in kJ / mol
             self.v_eff.append ( self._compute_rel_energy(self.rel_en_kj_mol - work,conv_factor=1.0) )
         self.v_eff = np.array(self.v_eff).T # we transpose the matrix, to facilitate printing later on.
-
 
     @staticmethod
     def _compute_distances(molecules, distance_tuples):
@@ -143,6 +144,22 @@ class analyse_cogef():
         self.rel_distances  = self.distances - self.distances[en_minimum]
         self.rel_distances_label = ["rel " + str(x) for x in self.distances_label]
         
+    def _filter_data_by_energy(self,cut_off_en=400.):
+        """ filter the data and remove high energy points
+            this function does not remove computed distances or V_eff data.
+            those computed data must be recomputed after filtering!
+
+        input:  cut_off_en = float # kj mol-1
+
+        """
+        for nn in range( len( self.rel_en_kj_mol) -1 , -1, -1):
+            if self.rel_en_kj_mol[nn] >= cut_off_en:
+                self.energies = np.delete(self.energies,[nn])
+                self.rel_en_kj_mol = np.delete(self.rel_en_kj_mol ,[nn])
+                self.spin.pop(nn)
+                self.molecules.pop(nn)
+                self.num_struc.pop(nn)
+
 
     def write_en_csv(self,of,print_veff=False):
         header = ["Num Struc"]
@@ -174,6 +191,7 @@ if __name__ == "__main__" :
     parser = argparse.ArgumentParser()
     parser.add_argument("xyzfiles",help="list of xyz files to analyse", nargs="+", type=argparse.FileType("r"))
     parser.add_argument("-csv",help="output csv file", type=argparse.FileType("w"), default="summary.csv")
+    parser.add_argument("-fil",help="filter out energies higher than nn", type=float, default=None)
     parser.add_argument("-d",help="distances to analyse as pairs, e.g. '0 1; 2 3'. the first distance pair"+\
                                   "will be used to compute veff.", default=None)
     parser.add_argument("-veff",help="compute veff", action="store_true", default=False)
@@ -201,7 +219,7 @@ if __name__ == "__main__" :
 
     # convert our trajectory to a dictionary with lists as elements.
     data = analyse_cogef()
-    data.fill_with_molecules(trajectories)
+    data.fill_with_molecules(trajectories,filter_en=args.fil)
 
     # compute distances
     if args.d:
