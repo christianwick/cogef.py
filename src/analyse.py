@@ -86,10 +86,12 @@ class analyse_cogef():
         if isinstance(filter_en, float):
             self._filter_data_by_energy(filter_en)
 
-    @staticmethod
-    def _compute_rel_energy(energies,conv_factor=constants.hartree_to_kJ_mol):
-        en_min = np.argmin(energies)
-        return ( (energies - energies[en_min] ) * conv_factor )
+    def _compute_rel_energy(self,energies,conv_factor=constants.hartree_to_kJ_mol, use_first_minimum = False):
+        if use_first_minimum :
+            en_min = self._find_first_energy_minimum(energies)
+        else:
+            en_min = np.min(energies)
+        return ( (energies - en_min ) * conv_factor )
 
     def compute_veff(self,forces=[2.0,3.0,4.0,5.0]):
         """ compute the effective potential according to Brügner et al. as
@@ -107,7 +109,7 @@ class analyse_cogef():
         for force in forces: 
             self.v_eff_label.append(f"Veff {force:3.2f} [kJ mol-1]")
             work = force * distances * constants.nNm_to_kJ_mol  # in kJ / mol
-            self.v_eff.append ( self._compute_rel_energy(self.rel_en_kj_mol - work,conv_factor=1.0) )
+            self.v_eff.append ( self._compute_rel_energy(self.rel_en_kj_mol - work,conv_factor=1.0,use_first_minimum=True) )
         self.v_eff = np.array(self.v_eff).T # we transpose the matrix, to facilitate printing later on.
 
     @staticmethod
@@ -159,6 +161,15 @@ class analyse_cogef():
                 self.spin.pop(nn)
                 self.molecules.pop(nn)
                 self.num_struc.pop(nn)
+
+    @staticmethod
+    def _find_first_energy_minimum(rel_energies):
+        min_en = rel_energies[0]
+        for val in rel_energies[1:]:
+            if val >= min_en:
+                break
+            min_en = val
+        return(min_en)
 
 
     def write_en_csv(self,of,print_veff=False):
