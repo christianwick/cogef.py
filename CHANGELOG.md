@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.1 Cogef.py 21.10.21
+### added
+- added the analysis tool analysis.py
+- analysis.py will replace the old tool analyse_cogef.py in future versions
+
 ## 1.4.1 Cogef.py 11.09.21
 ### fixed
 -simple_orca_sp.py: reverse direction works now as expected
