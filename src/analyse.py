@@ -93,7 +93,7 @@ class analyse_cogef():
             en_min = np.min(energies)
         return ( (energies - en_min ) * conv_factor )
 
-    def compute_veff(self,forces=[2.0,3.0,4.0,5.0]):
+    def compute_veff(self,forces=[0.5,1.0,2.0,3.0,4.0,5.0],use_first_minimum=False):
         """ compute the effective potential according to Brügner et al. as
             U_F(d) = U(d) - Fd
         
@@ -109,7 +109,7 @@ class analyse_cogef():
         for force in forces: 
             self.v_eff_label.append(f"Veff {force:3.2f} [kJ mol-1]")
             work = force * distances * constants.nNm_to_kJ_mol  # in kJ / mol
-            self.v_eff.append ( self._compute_rel_energy(self.rel_en_kj_mol - work,conv_factor=1.0,use_first_minimum=True) )
+            self.v_eff.append ( self._compute_rel_energy(self.rel_en_kj_mol - work,conv_factor=1.0,use_first_minimum=use_first_minimum) )
         self.v_eff = np.array(self.v_eff).T # we transpose the matrix, to facilitate printing later on.
 
     @staticmethod
@@ -140,11 +140,17 @@ class analyse_cogef():
         self.dist_tupl = distance_tuples
         self.distances, self.distances_label = self._compute_distances(self.molecules, self.dist_tupl)
         self._compute_rel_distance_min_energy_structure()
+        self._compute_strain()
 
     def _compute_rel_distance_min_energy_structure(self):
         en_minimum = np.argmin(self.energies)
         self.rel_distances  = self.distances - self.distances[en_minimum]
         self.rel_distances_label = ["rel " + str(x) for x in self.distances_label]
+
+    def _compute_strain(self):
+        self.strain = []
+        self.strain = self.rel_distances / self.distances
+        self.strain_label = ["strain " + str(x)[:-5] for x in self.distances_label]
         
     def _filter_data_by_energy(self,cut_off_en=400.):
         """ filter the data and remove high energy points
@@ -172,12 +178,14 @@ class analyse_cogef():
         return(min_en)
 
 
-    def write_en_csv(self,of,print_veff=False):
+    def write_en_csv(self,of,print_veff=False,print_strain=False):
         header = ["Num Struc"]
         # set distances
         if len(self.distances[:,0]) == len(self.energies):
             header.extend(self.distances_label)
             header.extend(self.rel_distances_label)
+            if print_strain:
+                header.extend(self.strain_label)
         header.append("Energy [au]")
         header.append("Rel Energy [kJ mol-1]")
         if print_veff == True:
@@ -189,6 +197,8 @@ class analyse_cogef():
             if len(self.distances) == len(self.energies):
                 row.extend(self.distances[nn])
                 row.extend(self.rel_distances[nn])
+                if print_strain:
+                    row.extend(self.strain[nn])
             row.append(self.energies[nn])
             row.append(self.rel_en_kj_mol[nn])
             if print_veff == True:
@@ -205,7 +215,10 @@ if __name__ == "__main__" :
     parser.add_argument("-fil",help="filter out energies higher than nn", type=float, default=None)
     parser.add_argument("-d",help="distances to analyse as pairs, e.g. '0 1; 2 3'. the first distance pair"+\
                                   "will be used to compute veff.", default=None)
+    parser.add_argument("-strain",help="compute strain", action="store_true", default=False)
     parser.add_argument("-veff",help="compute veff", action="store_true", default=False)
+    parser.add_argument("-movie",help="sample a very large number of forces for movies.", action="store_true", default=False)
+    parser.add_argument("-first_min",help="use first minimum instead of global minimum to compute veff", action="store_true", default=False)
 
     group_logging = parser.add_argument_group("logging")
     group_logging.add_argument("-log_level", help="set the log level", choices=["DEBUG","INFO"], default="INFO")
@@ -238,8 +251,11 @@ if __name__ == "__main__" :
         data.save_distances(dist_tuples)
 
         if args.veff:
-            data.compute_veff()
-    data.write_en_csv(args.csv,print_veff=args.veff)
+            if args.movie:
+                data.compute_veff(forces=np.arange(0.01,5.01,0.01),use_first_minimum=args.first_min)
+            else:
+                data.compute_veff(use_first_minimum=args.first_min)
+    data.write_en_csv(args.csv,print_veff=args.veff,print_strain=args.strain)
     
 
 
