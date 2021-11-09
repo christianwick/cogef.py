@@ -52,11 +52,11 @@ def get_dist_tuple(raw):
 
     returns dist_tuple = list ( tuple )
     """
-    dist_tuple = []
+    input_tuple = []
     temp = raw.split(";")
     for pair in temp:
-        dist_tuple.append((int(pair.split()[0])-1,int(pair.split()[1])-1))
-    return(dist_tuple)
+        input_tuple.append((int(pair.split()[0])-1,int(pair.split()[1])-1))
+    return(input_tuple)
 
 
 
@@ -218,6 +218,7 @@ if __name__ == "__main__" :
     parser.add_argument("-strain",help="compute strain", action="store_true", default=False)
     parser.add_argument("-veff",help="compute veff", action="store_true", default=False)
     parser.add_argument("-movie",help="sample a very large number of forces for movies.", action="store_true", default=False)
+    parser.add_argument("-forces",help="forces to use in veff calculations, e.g. '0.5; 1.0; 1.5'", default=False)
     parser.add_argument("-first_min",help="use first minimum instead of global minimum to compute veff", action="store_true", default=False)
 
     group_logging = parser.add_argument_group("logging")
@@ -253,6 +254,9 @@ if __name__ == "__main__" :
         if args.veff:
             if args.movie:
                 data.compute_veff(forces=np.arange(0.01,5.01,0.01),use_first_minimum=args.first_min)
+            elif args.forces:
+                forces = [ float(x) for x in args.forces.split(";") ]
+                data.compute_veff(forces=forces,use_first_minimum=args.first_min)
             else:
                 data.compute_veff(use_first_minimum=args.first_min)
     data.write_en_csv(args.csv,print_veff=args.veff,print_strain=args.strain)
