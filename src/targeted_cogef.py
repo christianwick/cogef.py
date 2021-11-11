@@ -25,7 +25,8 @@ if __name__ == "__main__":
     parser.add_argument("atoms", help="atom1 atom2 starting at 1",nargs='+', type=int)
     
     group_molecule = parser.add_argument_group("molecule definition")
-    group_molecule .add_argument("-xyz", required=True, help="xyz file",type=argparse.FileType('r'))
+    group_molecule.add_argument("-xyz", required=True, help="xyz file",type=argparse.FileType('r'))
+    group_molecule.add_argument("-oniom", help="oniom template file",type=argparse.FileType('r'),default=None)
     group_molecule.add_argument("-charge",help="list of charges",type=int, nargs="+", default=[0])
     group_molecule.add_argument("-multiplicity",help="list of multiplicities",type=int, nargs="+", default=[1])
 
@@ -79,7 +80,10 @@ if __name__ == "__main__":
         logger.info("    -{:10s} : {}".format(arg,value))
 
     args.fragment = [ int(x) - 1 for x in args.fragment ]
-    data = gaussian.GaussianInputWithFragments(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
+    if args.oniom:
+        data = gaussian.OniomInput(template = args.oniom, mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
+    else: 
+        data = gaussian.GaussianInputWithFragments(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
     if args.method:
         data.route["level_of_theory"] = args.method 
     if args.dispersion:
@@ -135,17 +139,19 @@ if __name__ == "__main__":
                     data.molecule.coordinates = glog.molecule.coordinates
                     #args.no_opt = False
                 # check for instability or break out 
+                # we also check for stationary points and move the old log files
                 if glog.instability:
                     logger.warning("Instability detected at cycle {} {} {}".format(ii, stationary_cycles, instab_cycles, ))
                     os.rename(filename+".log", "{}_{}_{}.log".format(filename, stationary_cycles, instab_cycles))
                     instab_cycles +=1
-                elif glog.error:
+                elif glog.error and glog.stationary:
                     # at the moment, we will treat error terminations as instability and try another instab cycle.
+                    # however if we found no stationary point, we will handle the error termination in the stationary loop.
                     logger.warning("Error termination detected at cycle {} {} {}".format(ii, stationary_cycles, instab_cycles, ))
                     os.rename(filename+".log", "{}_{}_{}.log".format(filename, stationary_cycles, instab_cycles))
                     instab_cycles += 1
                 else:
-                    logger.info("Wavefunction is stable.")
+                    logger.info("Wavefunction is stable.")                    
                     break
             # check for stationary point or break out 
             if not glog.stationary:
