@@ -1,4 +1,8 @@
 # Changelog
+## 1.5.2 Cogef.py 11.11.21
+### fixed
+- analysis.py can now correctly read in forces for computing Veff
+- targeted_cogef.py counts stationary cycles correctly and distinguishes them from error terminations
 
 ## 1.5.1 Cogef.py 21.10.21
 ### added
