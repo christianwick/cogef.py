@@ -178,7 +178,7 @@ class analyse_cogef():
         return(min_en)
 
 
-    def write_en_csv(self,of,print_veff=False,print_strain=False):
+    def write_en_csv(self,of,print_veff=False,print_strain=False,print_spin=True):
         header = ["Num Struc"]
         # set distances
         if len(self.distances[:,0]) == len(self.energies):
@@ -190,6 +190,8 @@ class analyse_cogef():
         header.append("Rel Energy [kJ mol-1]")
         if print_veff == True:
             header.extend(self.v_eff_label)
+        if print_spin == True:
+            header.append("<S**2>")
         writer = csv.writer(of)
         writer.writerow(header)
         for nn in range(len(self.energies)):
@@ -203,6 +205,8 @@ class analyse_cogef():
             row.append(self.rel_en_kj_mol[nn])
             if print_veff == True:
                 row.extend(self.v_eff[nn])
+            if print_spin == True:
+                row.append(self.spin[nn])
             writer.writerow(row)
 
 
@@ -217,6 +221,7 @@ if __name__ == "__main__" :
                                   "will be used to compute veff.", default=None)
     parser.add_argument("-strain",help="compute strain", action="store_true", default=False)
     parser.add_argument("-veff",help="compute veff", action="store_true", default=False)
+    parser.add_argument("-spin",help="print <S**2>", action="store_true", default=False)
     parser.add_argument("-movie",help="sample a very large number of forces for movies.", action="store_true", default=False)
     parser.add_argument("-forces",help="forces to use in veff calculations, e.g. '0.5; 1.0; 1.5'", default=False)
     parser.add_argument("-first_min",help="use first minimum instead of global minimum to compute veff", action="store_true", default=False)
