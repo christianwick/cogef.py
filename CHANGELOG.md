@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.4 Cogef.py 15.11.21
+### fixed
+- removed unneccesary import of matplotlib in analysis tools
+
 ## 1.5.3 Cogef.py 15.11.21
 ### fixed
 - added test keyword to cogef calculations (gaussian will throw errors if 
