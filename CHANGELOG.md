@@ -1,4 +1,10 @@
 # Changelog
+
+## 1.5.3 Cogef.py 15.11.21
+### fixed
+- added test keyword to cogef calculations (gaussian will throw errors if 
+multiple files with the same name are written to the archive from different users)
+
 ## 1.5.2 Cogef.py 11.11.21
 ### fixed
 - analysis.py can now correctly read in forces for computing Veff

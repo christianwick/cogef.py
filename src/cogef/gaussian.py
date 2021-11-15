@@ -20,7 +20,7 @@ class GaussianInput():
                     fragments=[],
                     charge=[0],
                     multiplicity=[1],
-                    route = "#P",
+                    route = "#P test",
                     method="UB3LYP/D95(d,p)"):
         logger.debug("Initialise gaussian base class")
         self.filename = filename
