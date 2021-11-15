@@ -195,8 +195,69 @@ class GaussianInputWithFragments(GaussianInput):
 class OniomInput(GaussianInput):
     def __init__(self, template, **kwargs):
         super().__init__(**kwargs)
-        pass
+        self.connectivity, self.parm = self._read_oniom_template(template)
         #self.molecule = OniomMolecule(): 
+    
+    def _write_molecule(self):
+        pass
+    
+    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}):
+        logger.debug("Writing gaussian input file ...")
+        opt_args = {
+            "guess" : ["Mix","always"],
+            "geom" : "Modredundant",
+            "opt" : ["CalcFc","RFO"],
+            "nosymm" : None,
+            "scf" : ["XQC","MaxConven=75"] }
+        opt_args.update(route_args)
+        # should we perform a stability analysis prior to optimisation?
+        if initial_stab_opt:
+            opt_args.update({"guess" : "read", "geom" : ["Modredundant","allcheck"]})
+            self._write_link0(of)
+            self._write_route(of, args = {
+                "guess" : "mix",
+                "stable" : "opt",
+                "scf" :  ["XQC","MaxConven=75"] ,
+                "nosymm" : None })
+            self._write_title(of)
+            self._write_molecule(of)
+            self._write_link1(of)
+        # in case we found an instability we use the stable wfn directly.        
+        if instability:
+            opt_args.update({"guess" : "read", "geom" : ["Modredundant","allcheck"]})
+        self._write_link0(of)
+        self._write_route(of, args = opt_args)
+        if not "allcheck" in opt_args["geom"]:
+            self._write_title(of)
+            self._write_molecule(of)
+        self._write_modredundant(of,modredundant)
+        self._write_link1(of)
+        self._write_link0(of)
+        self._write_route(of, args = {
+            "guess" : "read",
+            "geom" : "allcheck",
+            "stable" : "opt",
+            "scf" :  ["XQC","MaxConven=75"] ,
+            "nosymm" : None })
+        of.write("\n\n")
+        logger.debug("Finished writing gaussian input file.")
+
+    def write_sp_input(self, of, route_args={}):
+        logger.debug("Writing gaussian sp input file ...")
+        opt_args = {
+            "guess" : ["Mix"],
+            "stable" : "opt",
+            "scf" : "XQC",
+            "nosymm" : None }
+        opt_args.update(route_args)
+        self._write_link0(of)
+        self._write_route(of, args = opt_args)
+        self._write_title(of)
+        self._write_molecule(of)
+        of.write("\n\n")
+        logger.debug("Finished writing gaussian sp input file.")
+    
+
         
 class CheckGaussianLogfile():
     """ Process gaussian log files and check for errors

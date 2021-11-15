@@ -255,6 +255,38 @@ class Molecule():
 
 
 class OniomMolecule(Molecule):
+    def read_oniom_template(self):
+        self.connectivity = []
+        self.parm = ""
+        self.freeze_code = []
+        self.layer = []
+        self.link_atom = []
+    
+    def _read_template(self,template):
+        logger.debug("Reading ONIOM template...")
+        if isinstance(inpstr,str):
+            lines = inpstr.split("\n")
+        elif isinstance(inpstr,TextIOWrapper):
+            lines = inpstr.readlines()
+        else:
+            lines=0
+        block=0
+        for line in lines:
+            temp = line.split()
+            if block == 0 and line != "":
+                self._read
+                self.coords.append([float(temp[1]), float(temp[2]), float(temp[3]) ])
+
+            elif block == 1 and line != "":
+                pass
+            elif block == 2 and line != "":
+                pass
+            
+            elements.append(str(temp[0]))
+        self.elements = elements
+        self.coordinates = np.array(coords)
+        logger.debug("Finished reading coordinates.")
+
     def write_oniom(self):
         pass
 
