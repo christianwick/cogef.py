@@ -35,7 +35,7 @@ if __name__ == "__main__":
     group_gaussian.add_argument("-mem", help="memory", type=str, default="12GB")
     group_gaussian.add_argument("-method", help="UwB97XD/def2TZVPP", type=str, default=None)
     group_gaussian.add_argument("-dispersion", help="GD3/GD3BJ/GD3", type=str, choices=["GD3","GD3BJ"], default=None)
-    group_gaussian.add_argument("-calcfc", help="calculate Force Constants for difficult cases", choices=["CalcFC","RecalcFC=5","CalcAll", "None"], default="CalcFC")
+    group_gaussian.add_argument("-calcfc", help="calculate Force Constants for difficult cases", choices=["CalcFC","RecalcFC=5","CalcAll", "None"], default="None")
     group_gaussian.add_argument("-rfo", help="use rfo",  choices=["RFO", "None"], default="RFO")
 
     group_output = parser.add_argument_group("Output options")
@@ -53,6 +53,7 @@ if __name__ == "__main__":
         "If you want to restart in reverse direction use the reverse option!)", type=int, default=0)
     group_tweaks.add_argument("-symm", help="move atoms symmetrically", action="store_true", default=False)
     group_tweaks.add_argument("-modred", help="modredundant section, separated by ';' ", default=None, type=str)
+    group_tweaks.add_argument("-hybrid", help="perform Hybrid optimisations using MM and EE embedding", action="store_true", default=False)
 
     group_deprecated = parser.add_argument_group("deprecated")
     group_deprecated.add_argument("-no_opt", help="!DEPRECATED! do not use optimized geometry in guess structure", action="store_true", default=False)
@@ -68,7 +69,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     atom1 = args.atoms[0]-1
     atom2 = args.atoms[1]-1
-
+    print(args.multiplicity)
+    print(args.charge)
     # START LOGGING HERE
     # this way no logs are created for e.g. -h or --version 
     cogef_logging.logging_init(log_file=args.logfile, log_level = args.log_level, stream_level = args.stream_level)
@@ -81,9 +83,10 @@ if __name__ == "__main__":
 
     args.fragment = [ int(x) - 1 for x in args.fragment ]
     if args.oniom:
-        data = gaussian.OniomInput(template = args.oniom, mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
+        data = gaussian.OniomInput(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
+        data.molecule.read_oniom_template(args.oniom)
     else: 
-        data = gaussian.GaussianInputWithFragments(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
+        data = gaussian.GaussianInput(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
     if args.method:
         data.route["level_of_theory"] = args.method 
     if args.dispersion:
@@ -91,6 +94,11 @@ if __name__ == "__main__":
 
     # set opt options
     opt_args = { "opt": ["MaxCyc=100"] } 
+    # we set oniom dependent options first
+    if args.oniom:
+        opt_args = { "opt": ["MaxCyc=50"] } 
+        opt_args["opt"].append("QuadMac")
+        args.rfo = "None" # unset because leads to problems in ONIOM type calculations.
     if args.calcfc != "None":
         opt_args["opt"].append(args.calcfc)
     if args.rfo != "None":
@@ -98,7 +106,12 @@ if __name__ == "__main__":
     logger.info("Setting opt options: {}".format(opt_args))
 
     # set mod redundant input
-    modredundant = ["{} {} F".format(args.atoms[0],args.atoms[1])]
+    modredundant = []
+    if args.oniom:
+        for atom in args.atoms:
+            data.molecule.freeze_code[atom-1] = "-1"
+    else:
+        modredundant = ["{} {} F".format(args.atoms[0],args.atoms[1])]
     if args.modred:
         for section in args.modred.split(";"):
             modredundant.append(section)
@@ -129,10 +142,14 @@ if __name__ == "__main__":
                     data.write_input(of,modredundant=modredundant, 
                           initial_stab_opt = not stationary,
                           instability = instab,
-                          route_args = opt_args)
+                          route_args = opt_args,
+                          hybrid_opt=args.hybrid)
                 rungauss = subprocess.run(["cogef_rung16",filename+".com"], check=True, capture_output=True, text=True)
                 # read gaussian log file
-                glog = gaussian.CheckGaussianLogfile(filename+".log")
+                if args.oniom:
+                    glog = gaussian.CheckOniomLogfile(filename+".log")
+                else:
+                    glog = gaussian.CheckGaussianLogfile(filename+".log")
                 glog.read_log()
                 if not args.no_opt:
                     data.molecule.elements = glog.molecule.elements
