@@ -53,7 +53,7 @@ if __name__ == "__main__":
         "If you want to restart in reverse direction use the reverse option!)", type=int, default=0)
     group_tweaks.add_argument("-symm", help="move atoms symmetrically", action="store_true", default=False)
     group_tweaks.add_argument("-modred", help="modredundant section, separated by ';' ", default=None, type=str)
-    group_tweaks.add_argument("-hybrid", help="perform Hybrid optimisations using MM and EE embedding", action="store_true", default=False)
+    group_tweaks.add_argument("-oniom_opt", help="perform Hybrid optimisations using MM and EE embedding", type=str, choices=["mm","full_ee","hybrid","ee_sp"], default=False)
 
     group_deprecated = parser.add_argument_group("deprecated")
     group_deprecated.add_argument("-no_opt", help="!DEPRECATED! do not use optimized geometry in guess structure", action="store_true", default=False)
@@ -143,7 +143,7 @@ if __name__ == "__main__":
                           initial_stab_opt = not stationary,
                           instability = instab,
                           route_args = opt_args,
-                          hybrid_opt=args.hybrid)
+                          oniom_opt=args.oniom_opt)
                 rungauss = subprocess.run(["cogef_rung16",filename+".com"], check=True, capture_output=True, text=True)
                 # read gaussian log file
                 if args.oniom:

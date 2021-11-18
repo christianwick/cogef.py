@@ -218,8 +218,13 @@ class OniomInput(GaussianInput):
             of.write("{} \n".format(line))
         of.write("\n")
     
-    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}, hybrid_opt = False):
+    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}, oniom_opt = False):
         logger.debug("Writing gaussian input file ...")
+        """ write input files for oniom calculations
+
+        Input:
+            oniom_opt :: hybrid, mm, full_ee, ee_sp, False :: chose optimisation method
+        """
         # NOTE: ONIOM uses RFO as standard. we use the gaussian standard optimizer
         # we setup the opt args assuming that we start a simple optimisation. 
         # if we perform other steps prior to optimisation we update them in each section accordingly
@@ -231,7 +236,7 @@ class OniomInput(GaussianInput):
             "scf" : ["XQC","MaxConven=75"] }
         opt_args.update(route_args)
         # SECTION 1: STABLE=OPT single point
-        if hybrid_opt:
+        if oniom_opt == "mm" or oniom_opt == "hybrid" or oniom_opt == "ee_sp":
             self._adjust_oniom_level_of_theory(ee=False)
         # should we perform a stability analysis prior to optimisation?
         if initial_stab_opt:
@@ -253,7 +258,7 @@ class OniomInput(GaussianInput):
         if instability:
             opt_args.update({"guess" : "read", "geom" : ["Modredundant","allcheck"]})
         # if we want a hybrid optimisation we optimize with mechanical embedding first 
-        if hybrid_opt:
+        if oniom_opt == "hybrid" :
             self._write_link0(of)
             self._adjust_oniom_level_of_theory(ee=False)
             self._write_route(of, args = opt_args)
@@ -274,6 +279,8 @@ class OniomInput(GaussianInput):
         # SECTION 3: FINAL STABLE=OPT
         self._write_link1(of)
         self._write_link0(of)
+        if oniom_opt == "ee_sp":
+            self._adjust_oniom_level_of_theory(ee=True)
         self._write_route(of, args = {
             "guess" : "read",
             "geom" : "allcheck",
