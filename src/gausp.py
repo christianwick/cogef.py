@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" fragement_cogef.py - read xyz files and write gaussian input with modifed coords
+""" gausp.py - read xyz files and write gaussian input for sp calculations
  
 """
 
