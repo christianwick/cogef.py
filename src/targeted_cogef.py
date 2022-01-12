@@ -27,6 +27,7 @@ if __name__ == "__main__":
     group_molecule = parser.add_argument_group("molecule definition")
     group_molecule.add_argument("-xyz", required=True, help="xyz file",type=argparse.FileType('r'))
     group_molecule.add_argument("-oniom", help="oniom template file",type=argparse.FileType('r'),default=None)
+    group_molecule.add_argument("-amber", help="amber template file",type=argparse.FileType('r'),default=None)
     group_molecule.add_argument("-charge",help="list of charges",type=int, nargs="+", default=[0])
     group_molecule.add_argument("-multiplicity",help="list of multiplicities",type=int, nargs="+", default=[1])
 
@@ -36,6 +37,7 @@ if __name__ == "__main__":
     group_gaussian.add_argument("-method", help="UwB97XD/def2TZVPP", type=str, default=None)
     group_gaussian.add_argument("-dispersion", help="GD3/GD3BJ/GD3", type=str, choices=["GD3","GD3BJ"], default=None)
     group_gaussian.add_argument("-calcfc", help="calculate Force Constants for difficult cases", choices=["CalcFC","RecalcFC=5","CalcAll", "None"], default="None")
+    group_gaussian.add_argument("-opt_args", help="additional arguments for the optimisation, eg: 'Z-matrix,No-Micro'", type=str, default=False)
     group_gaussian.add_argument("-rfo", help="use rfo",  choices=["RFO", "None"], default="RFO")
 
     group_output = parser.add_argument_group("Output options")
@@ -69,8 +71,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     atom1 = args.atoms[0]-1
     atom2 = args.atoms[1]-1
-    print(args.multiplicity)
-    print(args.charge)
+
     # START LOGGING HERE
     # this way no logs are created for e.g. -h or --version 
     cogef_logging.logging_init(log_file=args.logfile, log_level = args.log_level, stream_level = args.stream_level)
@@ -85,6 +86,9 @@ if __name__ == "__main__":
     if args.oniom:
         data = gaussian.OniomInput(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
         data.molecule.read_oniom_template(args.oniom)
+    elif args.amber:
+        data = gaussian.AmberInput(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
+        data.molecule.read_oniom_template(args.amber)
     else: 
         data = gaussian.GaussianInput(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
     if args.method:
@@ -98,16 +102,22 @@ if __name__ == "__main__":
     if args.oniom:
         opt_args = { "opt": ["MaxCyc=50"] } 
         opt_args["opt"].append("QuadMac")
-        args.rfo = "None" # unset because leads to problems in ONIOM type calculations.
+        args.rfo = "None" # unset for ONIOM type calculations
+    if args.amber: 
+        opt_args = { "opt": ["MaxCyc=50,NoMicro"] } 
+        args.rfo = "None"
+        args.calcfc = "None"
     if args.calcfc != "None":
         opt_args["opt"].append(args.calcfc)
     if args.rfo != "None":
         opt_args["opt"].append("RFO")
+    if args.opt_args:
+        opt_args["opt"].extend(opt.args.split(","))
     logger.info("Setting opt options: {}".format(opt_args))
 
     # set mod redundant input
     modredundant = []
-    if args.oniom:
+    if args.oniom or args.amber:
         for atom in args.atoms:
             data.molecule.freeze_code[atom-1] = "-1"
     else:
@@ -139,15 +149,24 @@ if __name__ == "__main__":
             while instab_cycles <= args.max_instab_cycles:
                 filename="cogef_{:03d}".format(int(ii))
                 with open(filename+".com", "w") as of:
-                    data.write_input(of,modredundant=modredundant, 
+                    # THIS NEEDS TO BE changed. we should set the arguments somewhere else and remove the if
+                    if args.oniom:
+                        data.write_input(of,modredundant=modredundant, 
                           initial_stab_opt = not stationary,
                           instability = instab,
                           route_args = opt_args,
                           oniom_opt=args.oniom_opt)
+                    else:
+                        data.write_input(of,modredundant=modredundant, 
+                          initial_stab_opt = not stationary,
+                          instability = instab,
+                          route_args = opt_args)
                 rungauss = subprocess.run(["cogef_rung16",filename+".com"], check=True, capture_output=True, text=True)
                 # read gaussian log file
                 if args.oniom:
                     glog = gaussian.CheckOniomLogfile(filename+".log")
+                elif args.amber:
+                    glog = gaussian.CheckAmberLogfile(filename+".log")
                 else:
                     glog = gaussian.CheckGaussianLogfile(filename+".log")
                 glog.read_log()

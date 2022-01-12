@@ -88,7 +88,7 @@ class GaussianInput():
     def _write_link1(self,of):
         of.write("--link1--\n")
 
-    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}):
+    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}, **kwargs):
         logger.debug("Writing gaussian input file ...")
         opt_args = {
             "guess" : ["Mix","always"],
@@ -191,6 +191,7 @@ class GaussianInputWithFragments(GaussianInput):
             "nosymm" : None })
         of.write("\n\n")
         logger.debug("Finished writing gaussian input file with fragments.")
+
 
 
 class OniomInput(GaussianInput):
@@ -311,6 +312,35 @@ class OniomInput(GaussianInput):
             lot += ("=EMBEDCHARGE")
         self.route["level_of_theory"] = lot
 
+class AmberInput(OniomInput):
+    """ the gaussian base class for pure AMBER calculations """
+
+    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}, oniom_opt = False):
+        logger.debug("Writing gaussian input file ...")
+        """ write input files for oniom calculations
+
+        Input:
+            we ignore most of the input arguments. mainly we use the route_args.
+        """
+        # NOTE: ONIOM uses RFO as standard. we use the gaussian standard optimizer
+        # we setup the opt args assuming that we start a simple optimisation. 
+        # if we perform other steps prior to optimisation we update them in each section accordingly
+        opt_args = {
+            "guess" : ["Mix","always"],
+            "geom" : ["Modredundant","connectivity"],
+            "opt" : ["NoMicro"],
+            "nosymm" : None,
+            "scf" : ["XQC","MaxConven=75"] }
+        opt_args.update(route_args)
+        # SECTION 2: OPTIMISATION
+        self._write_link0(of)
+        self._write_route(of, args = opt_args)
+        self._write_title(of)
+        self._write_molecule(of)
+        self._write_modredundant(of,modredundant)
+        self._write_parm(of)
+        of.write("\n\n")
+        logger.debug("Finished writing gaussian input file.")
         
 class CheckGaussianLogfile():
     """ Process gaussian log files and check for errors
@@ -494,7 +524,23 @@ class CheckOniomLogfile(CheckGaussianLogfile):
         if self._find_scf_energy.search(line):
             temp = line.split()
             self.scf_energy = temp[0] + " = " + temp[4]
-        
+
+class CheckAmberLogfile(CheckGaussianLogfile):
+    """ Process gaussian log files and check for errors in pure AMBER calculations
+
+        self.instability -> boolean (True if an instability has been found)
+        self.stationary -> boolean (True if stationary point has been found)
+        self.error -> boolean (True if last termination was not a Normal termination.)
+    """
+    def __init__(self, *args):
+        super().__init__(*args)
+        self._find_scf_energy = re.compile("^ Energy=")
+    
+    def _read_scf_energy(self, line):
+        if self._find_scf_energy.search(line):
+            temp = line.split()
+            self.scf_energy = temp[0] + " = " + temp[1]
+
 #the following functions are kept for backwards compatibility and will
 #be removed in future versions
 def read_instability_from_log(filename):
