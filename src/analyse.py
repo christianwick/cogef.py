@@ -74,6 +74,8 @@ class analyse_cogef():
         self.v_eff = []
         self.v_eff_label = []
         self.dist_tupl = []
+        self.forces = []
+        self.max_force = None
 
     def fill_with_molecules(self,trajectories, filter_en = False):
         for nn, mol in enumerate(trajectories):
@@ -85,6 +87,9 @@ class analyse_cogef():
         self.rel_en_kj_mol = self._compute_rel_energy(self.energies)
         if isinstance(filter_en, float):
             self._filter_data_by_energy(filter_en)
+        en_max = self._find_maxima(self.energies)
+        for val in en_max:
+            logger.info("Found Energy maximum at point {:3} = {:7.3f} kJ/mol".format(val, self.rel_en_kj_mol[val]))
 
     def _compute_rel_energy(self,energies,conv_factor=constants.hartree_to_kJ_mol, use_first_minimum = False):
         if use_first_minimum :
@@ -110,7 +115,12 @@ class analyse_cogef():
             self.v_eff_label.append(f"Veff {force:3.2f} [kJ mol-1]")
             work = force * distances * constants.nNm_to_kJ_mol  # in kJ / mol
             self.v_eff.append ( self._compute_rel_energy(self.rel_en_kj_mol - work,conv_factor=1.0,use_first_minimum=use_first_minimum) )
+        for nn, veff in enumerate(self.v_eff):
+            en_max = self._find_maxima(veff)
+            for val in en_max:
+                logger.info("Found maximum of {:3} point {:3} = {:7.3f} kJ/mol".format(self.v_eff_label[nn], val, veff[val]))
         self.v_eff = np.array(self.v_eff).T # we transpose the matrix, to facilitate printing later on.
+
 
     @staticmethod
     def _compute_distances(molecules, distance_tuples):
@@ -150,7 +160,7 @@ class analyse_cogef():
     def _compute_strain(self):
         self.strain = []
         self.strain = self.rel_distances / self.distances
-        self.strain_label = ["strain " + str(x)[:-5] for x in self.distances_label]
+        self.strain_label = ["strain " + str(x)[:-6] for x in self.distances_label]
         
     def _filter_data_by_energy(self,cut_off_en=400.):
         """ filter the data and remove high energy points
@@ -169,6 +179,22 @@ class analyse_cogef():
                 self.num_struc.pop(nn)
 
     @staticmethod
+    def _find_maxima(energies):
+        last = energies[0]
+        rising = False
+        maxima = []
+        for nn, val in enumerate(energies[1:]):
+            if val > last:
+                rising = True
+            elif val < last and rising:
+                maxima.append(nn)
+                rising = False
+            last = val
+        return(maxima)
+
+
+
+    @staticmethod
     def _find_first_energy_minimum(rel_energies):
         min_en = rel_energies[0]
         for val in rel_energies[1:]:
@@ -177,6 +203,12 @@ class analyse_cogef():
             min_en = val
         return(min_en)
 
+    def compute_forces(self, dist_index=0):
+        de = ( self.energies[1:] - self.energies[:-1] ) * constants.hartree_to_J
+        dx = ( self.distances[1:,dist_index] - self.distances[:-1,dist_index] ) * constants.angstrom_to_m
+        self.forces = np.divide(de,dx) * 1.0E9 # from N to nN
+        self.max_force = np.max(self.forces)
+        logger.info("Max Force = {:7.3f} nN".format(self.max_force))
 
     def write_en_csv(self,of,print_veff=False,print_strain=False,print_spin=True):
         header = ["Num Struc"]
@@ -220,11 +252,13 @@ if __name__ == "__main__" :
     parser.add_argument("-d",help="distances to analyse as pairs, e.g. '0 1; 2 3'. the first distance pair"+\
                                   "will be used to compute veff.", default=None)
     parser.add_argument("-strain",help="compute strain", action="store_true", default=False)
+    parser.add_argument("-compforce",help="compute forces", action="store_true", default=False)
     parser.add_argument("-veff",help="compute veff", action="store_true", default=False)
     parser.add_argument("-spin",help="print <S**2>", action="store_true", default=False)
     parser.add_argument("-movie",help="sample a very large number of forces for movies.", action="store_true", default=False)
     parser.add_argument("-forces",help="forces to use in veff calculations, e.g. '0.5; 1.0; 1.5'", default=False)
     parser.add_argument("-first_min",help="use first minimum instead of global minimum to compute veff", action="store_true", default=False)
+
 
     group_logging = parser.add_argument_group("logging")
     group_logging.add_argument("-log_level", help="set the log level", choices=["DEBUG","INFO"], default="INFO")
@@ -238,6 +272,8 @@ if __name__ == "__main__" :
     logger = logging.getLogger("analyse")
     logger.info("Starting analyse.py .... " )
     logger.info("Version: {}".format(__version__))
+    for fil in args.xyzfiles:
+        logger.info("XYZfiles: {}".format(fil.name))
     logger.info("Command line Arguments: ")
     for arg,value in (vars(args)).items():
         logger.info("    -{:10s} : {}".format(arg,value))
@@ -264,7 +300,12 @@ if __name__ == "__main__" :
                 data.compute_veff(forces=forces,use_first_minimum=args.first_min)
             else:
                 data.compute_veff(use_first_minimum=args.first_min)
+        if args.compforce:
+            data.compute_forces()
     data.write_en_csv(args.csv,print_veff=args.veff,print_strain=args.strain)
+    logger.info("Finished analyse.py.")
+    logger.info("")
+    logger.info("")
     
 
 
