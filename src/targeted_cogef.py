@@ -55,7 +55,7 @@ if __name__ == "__main__":
         "If you want to restart in reverse direction use the reverse option!)", type=int, default=0)
     group_tweaks.add_argument("-symm", help="move atoms symmetrically", action="store_true", default=False)
     group_tweaks.add_argument("-modred", help="modredundant section, separated by ';' ", default=None, type=str)
-    group_tweaks.add_argument("-oniom_opt", help="perform Hybrid optimisations using MM and EE embedding", type=str, choices=["mm","full_ee","hybrid","ee_sp"], default=False)
+    group_tweaks.add_argument("-oniom_opt", help="perform Hybrid optimisations using ME and EE embedding", type=str, choices=["me","full_ee","hybrid","ee_sp"], default=False)
 
     group_deprecated = parser.add_argument_group("deprecated")
     group_deprecated.add_argument("-no_opt", help="!DEPRECATED! do not use optimized geometry in guess structure", action="store_true", default=False)
@@ -100,11 +100,10 @@ if __name__ == "__main__":
     opt_args = { "opt": ["MaxCyc=100"] } 
     # we set oniom dependent options first
     if args.oniom:
-        opt_args = { "opt": ["MaxCyc=50"] } 
-        opt_args["opt"].append("QuadMac")
+        opt_args = { "opt": ["MaxCyc=50","QuadMac","Mic120"] } 
         args.rfo = "None" # unset for ONIOM type calculations
     if args.amber: 
-        opt_args = { "opt": ["MaxCyc=50,NoMicro"] } 
+        opt_args = { "opt": ["MaxCyc=200,NoMicro"] } 
         args.rfo = "None"
         args.calcfc = "None"
     if args.calcfc != "None":
@@ -112,7 +111,9 @@ if __name__ == "__main__":
     if args.rfo != "None":
         opt_args["opt"].append("RFO")
     if args.opt_args:
-        opt_args["opt"].extend(opt.args.split(","))
+        print(opt_args)
+        opt_args["opt"].extend(args.opt_args.split(","))
+        print(opt_args)
     logger.info("Setting opt options: {}".format(opt_args))
 
     # set mod redundant input

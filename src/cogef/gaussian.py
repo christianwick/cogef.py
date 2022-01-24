@@ -224,25 +224,26 @@ class OniomInput(GaussianInput):
         """ write input files for oniom calculations
 
         Input:
-            oniom_opt :: hybrid, mm, full_ee, ee_sp, False :: chose optimisation method
+            oniom_opt :: hybrid, me, full_ee, ee_sp, False :: chose optimisation method
         """
         # NOTE: ONIOM uses RFO as standard. we use the gaussian standard optimizer
         # we setup the opt args assuming that we start a simple optimisation. 
         # if we perform other steps prior to optimisation we update them in each section accordingly
         opt_args = {
             "guess" : ["Mix","always"],
-            "geom" : ["Modredundant","connectivity"],
+            "geom" : ["connectivity"],
             "opt" : None,
             "nosymm" : None,
             "scf" : ["XQC","MaxConven=75"] }
         opt_args.update(route_args)
         # SECTION 1: STABLE=OPT single point
-        if oniom_opt == "mm" or oniom_opt == "hybrid" or oniom_opt == "ee_sp":
-            self._adjust_oniom_level_of_theory(ee=False)
-        # should we perform a stability analysis prior to optimisation?
+        if oniom_opt == "me" or oniom_opt == "hybrid" or oniom_opt == "ee_sp":
+            self._adjust_oniom_embedding(ee=False)
+        ## should we perform a stability analysis prior to optimisation?
         if initial_stab_opt:
             # we update the opt_args here for the next step:
-            opt_args.update({"guess" : "read", "geom" : ["Modredundant","allcheck"]})
+            ## Note: we do not use modredundant in oniom calculations
+            opt_args.update({"guess" : "read", "geom" : ["allcheck"]})
             self._write_link0(of)
             self._write_route(of, args = {
                 "guess" : "mix",
@@ -255,33 +256,34 @@ class OniomInput(GaussianInput):
             self._write_parm(of)
             self._write_link1(of)
         # SECTION 2: OPTIMISATION
-        # in case we found an instability we use the stable wfn directly.        
+        ## in case we found an instability we use the stable wfn directly.        
         if instability:
-            opt_args.update({"guess" : "read", "geom" : ["Modredundant","allcheck"]})
-        # if we want a hybrid optimisation we optimize with mechanical embedding first 
+            opt_args.update({"guess" : "read", "geom" : ["allcheck"]})
+        ## if we want a hybrid optimisation we optimize with mechanical embedding first 
+        ## otherwise, we can use the standard opt args and oniom_embedding
         if oniom_opt == "hybrid" :
             self._write_link0(of)
-            self._adjust_oniom_level_of_theory(ee=False)
+            self._adjust_oniom_embedding(ee=False)
             self._write_route(of, args = opt_args)
             if not "allcheck" in opt_args["geom"]:
                 self._write_title(of)
                 self._write_molecule(of)
-            self._write_modredundant(of,modredundant)
+            #self._write_modredundant(of,modredundant)
             self._write_parm(of)
             self._write_link1(of)
-            self._adjust_oniom_level_of_theory(ee=True)
+            self._adjust_oniom_embedding(ee=True)
         self._write_link0(of)
         self._write_route(of, args = opt_args)
         if not "allcheck" in opt_args["geom"]:
             self._write_title(of)
             self._write_molecule(of)
-        self._write_modredundant(of,modredundant)
+        #self._write_modredundant(of,modredundant)
         self._write_parm(of)
         # SECTION 3: FINAL STABLE=OPT
         self._write_link1(of)
         self._write_link0(of)
         if oniom_opt == "ee_sp":
-            self._adjust_oniom_level_of_theory(ee=True)
+            self._adjust_oniom_embedding(ee=True)
         self._write_route(of, args = {
             "guess" : "read",
             "geom" : "allcheck",
@@ -306,7 +308,7 @@ class OniomInput(GaussianInput):
         of.write("\n\n")
         logger.debug("Finished writing gaussian sp input file.")
     
-    def _adjust_oniom_level_of_theory(self, ee=True):
+    def _adjust_oniom_embedding(self, ee=True):
         lot = self.route["level_of_theory"].upper().rstrip("=EMBEDCHARGE")
         if ee:
             lot += ("=EMBEDCHARGE")
@@ -327,7 +329,7 @@ class AmberInput(OniomInput):
         # if we perform other steps prior to optimisation we update them in each section accordingly
         opt_args = {
             "guess" : ["Mix","always"],
-            "geom" : ["Modredundant","connectivity"],
+            "geom" : ["connectivity"],
             "opt" : ["NoMicro"],
             "nosymm" : None,
             "scf" : ["XQC","MaxConven=75"] }
@@ -337,7 +339,7 @@ class AmberInput(OniomInput):
         self._write_route(of, args = opt_args)
         self._write_title(of)
         self._write_molecule(of)
-        self._write_modredundant(of,modredundant)
+        #self._write_modredundant(of,modredundant)
         self._write_parm(of)
         of.write("\n\n")
         logger.debug("Finished writing gaussian input file.")
