@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.0 Cogef.py 24.01.22
+### added
+- added ONIOM and AMBER cogef functionality
+- improved analysis.py, added multiple options:
+  - computing forces
+  - finding maxima
+
 ## 1.5.4 Cogef.py 15.11.21
 ### fixed
 - removed unneccesary import of matplotlib in analysis tools
