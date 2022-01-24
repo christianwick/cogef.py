@@ -77,23 +77,27 @@ class analyse_cogef():
         self.forces = []
         self.max_force = None
 
-    def fill_with_molecules(self,trajectories, filter_en = False):
+    def fill_with_molecules(self,trajectories, filter_en = False,
+                            use_first_minimum = False, use_first_point = False):
         for nn, mol in enumerate(trajectories):
             self.energies.append(mol.energy)
             self.spin.append(mol.spin)
             self.molecules.append(mol)
             self.num_struc.append(nn)
         self.energies = np.array(self.energies)
-        self.rel_en_kj_mol = self._compute_rel_energy(self.energies)
+        self.rel_en_kj_mol = self._compute_rel_energy(self.energies,use_first_point=use_first_point,use_first_minimum=use_first_minimum)
         if isinstance(filter_en, float):
             self._filter_data_by_energy(filter_en)
         en_max = self._find_maxima(self.energies)
         for val in en_max:
             logger.info("Found Energy maximum at point {:3} = {:7.3f} kJ/mol".format(val, self.rel_en_kj_mol[val]))
 
-    def _compute_rel_energy(self,energies,conv_factor=constants.hartree_to_kJ_mol, use_first_minimum = False):
+    def _compute_rel_energy(self,energies,conv_factor=constants.hartree_to_kJ_mol, use_first_minimum = False, 
+                            use_first_point = False):
         if use_first_minimum :
             en_min = self._find_first_energy_minimum(energies)
+        elif use_first_point:
+            en_min = energies[0]
         else:
             en_min = np.min(energies)
         return ( (energies - en_min ) * conv_factor )
@@ -210,6 +214,27 @@ class analyse_cogef():
         self.max_force = np.max(self.forces)
         logger.info("Max Force = {:7.3f} nN".format(self.max_force))
 
+    def write_force_csv(self,of, print_strain=True, dist_index=0):
+        header = ["Num Struc"]
+        # set distances
+        header.append(self.distances_label[dist_index])
+        header.append(self.rel_distances_label[dist_index])
+        if print_strain:
+            header.append(self.strain_label[dist_index])
+        header.append("Force nN")
+        # start writing rows
+        writer = csv.writer(of)
+        writer.writerow(header)
+        for nn in range(len(self.forces)):
+            row = [self.num_struc[nn]]
+            row.append(self.distances[nn,dist_index])
+            row.append(self.rel_distances[nn,dist_index])
+            if print_strain:
+                row.append(self.strain[nn,dist_index])
+            row.append(self.forces[nn])
+            writer.writerow(row)
+        
+
     def write_en_csv(self,of,print_veff=False,print_strain=False,print_spin=True):
         header = ["Num Struc"]
         # set distances
@@ -248,6 +273,7 @@ if __name__ == "__main__" :
     parser = argparse.ArgumentParser()
     parser.add_argument("xyzfiles",help="list of xyz files to analyse", nargs="+", type=argparse.FileType("r"))
     parser.add_argument("-csv",help="output csv file", type=argparse.FileType("w"), default="summary.csv")
+    parser.add_argument("-fcsv",help="output force csv file", type=argparse.FileType("w"), default="summary_f.csv")
     parser.add_argument("-fil",help="filter out energies higher than nn", type=float, default=None)
     parser.add_argument("-d",help="distances to analyse as pairs, e.g. '0 1; 2 3'. the first distance pair"+\
                                   "will be used to compute veff.", default=None)
@@ -258,6 +284,7 @@ if __name__ == "__main__" :
     parser.add_argument("-movie",help="sample a very large number of forces for movies.", action="store_true", default=False)
     parser.add_argument("-forces",help="forces to use in veff calculations, e.g. '0.5; 1.0; 1.5'", default=False)
     parser.add_argument("-first_min",help="use first minimum instead of global minimum to compute veff", action="store_true", default=False)
+    parser.add_argument("-first_point",help="use first point instead of global minimum to compute relative energies", action="store_true", default=False)
 
 
     group_logging = parser.add_argument_group("logging")
@@ -285,7 +312,8 @@ if __name__ == "__main__" :
 
     # convert our trajectory to a dictionary with lists as elements.
     data = analyse_cogef()
-    data.fill_with_molecules(trajectories,filter_en=args.fil)
+    data.fill_with_molecules(trajectories,filter_en=args.fil,use_first_minimum = args.first_min, 
+                            use_first_point = args.first_point)
 
     # compute distances
     if args.d:
@@ -302,6 +330,7 @@ if __name__ == "__main__" :
                 data.compute_veff(use_first_minimum=args.first_min)
         if args.compforce:
             data.compute_forces()
+            data.write_force_csv(args.fcsv)
     data.write_en_csv(args.csv,print_veff=args.veff,print_strain=args.strain)
     logger.info("Finished analyse.py.")
     logger.info("")
