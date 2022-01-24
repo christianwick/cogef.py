@@ -13,11 +13,11 @@ logger = logging.getLogger("molecule")
 
 class Molecule():
     """ the Molecule base class """
-    def __init__(self, elements=[], 
-                    coordinates=[],
-                    fragments=[],
-                    charge=[0],
-                    multiplicity=[1],
+    def __init__(self, elements=None, 
+                    coordinates=None,
+                    fragments=None,
+                    charge=None,
+                    multiplicity=None,
                     comment=""):
         logger.debug("Initialise new molecule")
         self.elements = elements
@@ -255,6 +255,77 @@ class Molecule():
 
 
 class OniomMolecule(Molecule):
+    def read_oniom_template(self,inpstr):
+        self.connectivity = []
+        self.coordinates = []
+        self.parm = []
+        self.freeze_code = []
+        self.layer = []
+        self.link_atom = []
+        self.mm_elements = []
+    
+        logger.debug("Reading ONIOM template...")
+        if isinstance(inpstr,str):
+            lines = inpstr.split("\n")
+        elif isinstance(inpstr,TextIOWrapper):
+            lines = inpstr.readlines()
+        else:
+            lines=0
+        block=0
+        for line in lines:
+            temp = line.strip()
+            if temp == "":
+                block += 1
+            elif block == 0:
+                data = self._read_molecule_spec(temp)
+                self.mm_elements.append(data[0])
+                self.freeze_code.append(data[1])
+                self.coordinates.append(data[2])
+                self.layer.append(data[3])
+                self.link_atom.append(data[4])
+
+            elif block == 1:
+                self.connectivity.append(line.strip())
+            elif block == 2:
+                self.parm.append(line.strip())
+        self.coordinates = np.array(self.coordinates)    
+        logger.debug("Finished reading coordinates.")
+
+    def _read_molecule_spec(self,line):
+        element = ""
+        freeze_code = ""
+        coordinate = []
+        layer = ""
+        link_atom = ""
+        temp = line.split()
+        num_entries = len(temp)
+        if num_entries == 4:
+            element = temp[0]
+            coordinate = [float(temp[1]),float(temp[2]),float(temp[3])]
+        if num_entries >= 6:
+            element = temp[0]
+            freeze_code = temp[1]
+            coordinate = [float(temp[2]),float(temp[3]),float(temp[4])]
+            layer = temp[5]
+        if num_entries >= 7:
+            link_atom = temp[6]
+        return(element, freeze_code, coordinate, layer, link_atom)
+    
+    def __str__(self):
+        string=""
+        for i,j in zip(self.charge,self.multiplicity):
+            string += "{} {} ".format(i,j)
+        string += "\n"
+        for el, freeze_code, coord, layer, link_atom in zip(self.mm_elements, self.freeze_code, self.coordinates, self.layer, self.link_atom):
+            string += "{:20s} {:3s} {:14.8f} {:14.8f} {:14.8f} {:3s} {:3s} \n".format(el,freeze_code,*coord,layer,link_atom)
+        string += "\n"
+        for line in self.connectivity:
+            string += "{} \n".format(line)
+        string += "\n"
+        for line in self.parm:
+            string += "{} \n".format(line)
+        return(string)
+
     def write_oniom(self):
         pass
 

@@ -27,6 +27,7 @@ if __name__ == "__main__":
     group_molecule = parser.add_argument_group("molecule definition")
     group_molecule.add_argument("-xyz", required=True, help="xyz file",type=argparse.FileType('r'))
     group_molecule.add_argument("-oniom", help="oniom template file",type=argparse.FileType('r'),default=None)
+    group_molecule.add_argument("-amber", help="amber template file",type=argparse.FileType('r'),default=None)
     group_molecule.add_argument("-charge",help="list of charges",type=int, nargs="+", default=[0])
     group_molecule.add_argument("-multiplicity",help="list of multiplicities",type=int, nargs="+", default=[1])
 
@@ -35,7 +36,8 @@ if __name__ == "__main__":
     group_gaussian.add_argument("-mem", help="memory", type=str, default="12GB")
     group_gaussian.add_argument("-method", help="UwB97XD/def2TZVPP", type=str, default=None)
     group_gaussian.add_argument("-dispersion", help="GD3/GD3BJ/GD3", type=str, choices=["GD3","GD3BJ"], default=None)
-    group_gaussian.add_argument("-calcfc", help="calculate Force Constants for difficult cases", choices=["CalcFC","RecalcFC=5","CalcAll", "None"], default="CalcFC")
+    group_gaussian.add_argument("-calcfc", help="calculate Force Constants for difficult cases", choices=["CalcFC","RecalcFC=5","CalcAll", "None"], default="None")
+    group_gaussian.add_argument("-opt_args", help="additional arguments for the optimisation, eg: 'Z-matrix,No-Micro'", type=str, default=False)
     group_gaussian.add_argument("-rfo", help="use rfo",  choices=["RFO", "None"], default="RFO")
 
     group_output = parser.add_argument_group("Output options")
@@ -53,6 +55,7 @@ if __name__ == "__main__":
         "If you want to restart in reverse direction use the reverse option!)", type=int, default=0)
     group_tweaks.add_argument("-symm", help="move atoms symmetrically", action="store_true", default=False)
     group_tweaks.add_argument("-modred", help="modredundant section, separated by ';' ", default=None, type=str)
+    group_tweaks.add_argument("-oniom_opt", help="perform Hybrid optimisations using ME and EE embedding", type=str, choices=["me","full_ee","hybrid","ee_sp"], default=False)
 
     group_deprecated = parser.add_argument_group("deprecated")
     group_deprecated.add_argument("-no_opt", help="!DEPRECATED! do not use optimized geometry in guess structure", action="store_true", default=False)
@@ -81,9 +84,13 @@ if __name__ == "__main__":
 
     args.fragment = [ int(x) - 1 for x in args.fragment ]
     if args.oniom:
-        data = gaussian.OniomInput(template = args.oniom, mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
+        data = gaussian.OniomInput(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
+        data.molecule.read_oniom_template(args.oniom)
+    elif args.amber:
+        data = gaussian.AmberInput(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
+        data.molecule.read_oniom_template(args.amber)
     else: 
-        data = gaussian.GaussianInputWithFragments(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
+        data = gaussian.GaussianInput(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
     if args.method:
         data.route["level_of_theory"] = args.method 
     if args.dispersion:
@@ -91,14 +98,31 @@ if __name__ == "__main__":
 
     # set opt options
     opt_args = { "opt": ["MaxCyc=100"] } 
+    # we set oniom dependent options first
+    if args.oniom:
+        opt_args = { "opt": ["MaxCyc=50","QuadMac","Mic120"] } 
+        args.rfo = "None" # unset for ONIOM type calculations
+    if args.amber: 
+        opt_args = { "opt": ["MaxCyc=200,NoMicro"] } 
+        args.rfo = "None"
+        args.calcfc = "None"
     if args.calcfc != "None":
         opt_args["opt"].append(args.calcfc)
     if args.rfo != "None":
         opt_args["opt"].append("RFO")
+    if args.opt_args:
+        print(opt_args)
+        opt_args["opt"].extend(args.opt_args.split(","))
+        print(opt_args)
     logger.info("Setting opt options: {}".format(opt_args))
 
     # set mod redundant input
-    modredundant = ["{} {} F".format(args.atoms[0],args.atoms[1])]
+    modredundant = []
+    if args.oniom or args.amber:
+        for atom in args.atoms:
+            data.molecule.freeze_code[atom-1] = "-1"
+    else:
+        modredundant = ["{} {} F".format(args.atoms[0],args.atoms[1])]
     if args.modred:
         for section in args.modred.split(";"):
             modredundant.append(section)
@@ -126,13 +150,26 @@ if __name__ == "__main__":
             while instab_cycles <= args.max_instab_cycles:
                 filename="cogef_{:03d}".format(int(ii))
                 with open(filename+".com", "w") as of:
-                    data.write_input(of,modredundant=modredundant, 
+                    # THIS NEEDS TO BE changed. we should set the arguments somewhere else and remove the if
+                    if args.oniom:
+                        data.write_input(of,modredundant=modredundant, 
+                          initial_stab_opt = not stationary,
+                          instability = instab,
+                          route_args = opt_args,
+                          oniom_opt=args.oniom_opt)
+                    else:
+                        data.write_input(of,modredundant=modredundant, 
                           initial_stab_opt = not stationary,
                           instability = instab,
                           route_args = opt_args)
                 rungauss = subprocess.run(["cogef_rung16",filename+".com"], check=True, capture_output=True, text=True)
                 # read gaussian log file
-                glog = gaussian.CheckGaussianLogfile(filename+".log")
+                if args.oniom:
+                    glog = gaussian.CheckOniomLogfile(filename+".log")
+                elif args.amber:
+                    glog = gaussian.CheckAmberLogfile(filename+".log")
+                else:
+                    glog = gaussian.CheckGaussianLogfile(filename+".log")
                 glog.read_log()
                 if not args.no_opt:
                     data.molecule.elements = glog.molecule.elements

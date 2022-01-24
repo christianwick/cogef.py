@@ -4,6 +4,7 @@ import re
 
 from collections import OrderedDict
 from cogef.molecule import Molecule
+from cogef.molecule import OniomMolecule
 from cogef.mulliken import Mulliken
 
 logger = logging.getLogger("gaussian")
@@ -15,11 +16,11 @@ class GaussianInput():
                     chkfile="cogef.chk",
                     mem="12GB",
                     nproc="12",
-                    elements=[], 
-                    coordinates=[],
-                    fragments=[],
-                    charge=[0],
-                    multiplicity=[1],
+                    elements=None, 
+                    coordinates=None,
+                    fragments=None,
+                    charge=None,
+                    multiplicity=None,
                     route = "#P test",
                     method="UB3LYP/D95(d,p)"):
         logger.debug("Initialise gaussian base class")
@@ -87,7 +88,7 @@ class GaussianInput():
     def _write_link1(self,of):
         of.write("--link1--\n")
 
-    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}):
+    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}, **kwargs):
         logger.debug("Writing gaussian input file ...")
         opt_args = {
             "guess" : ["Mix","always"],
@@ -192,11 +193,156 @@ class GaussianInputWithFragments(GaussianInput):
         logger.debug("Finished writing gaussian input file with fragments.")
 
 
+
 class OniomInput(GaussianInput):
-    def __init__(self, template, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        pass
-        #self.molecule = OniomMolecule(): 
+        self.molecule = OniomMolecule(charge = self.molecule.charge, multiplicity = self.molecule.multiplicity)
+    
+    def _write_molecule(self,of,molecule=None):
+        if not isinstance(molecule, Molecule):
+            molecule=self.molecule
+        for i,j in zip(molecule.charge,molecule.multiplicity):
+            of.write("{} {} ".format(i,j))
+        of.write("\n")
+        for el, freeze_code, coord, layer, link_atom in zip(molecule.mm_elements, molecule.freeze_code, molecule.coordinates, molecule.layer, molecule.link_atom):
+            of.write("{:20s} {:3s} {:14.8f} {:14.8f} {:14.8f} {:3s} {:3s} \n".format(el,freeze_code,*coord,layer,link_atom))
+        of.write("\n")
+        for line in molecule.connectivity:
+            of.write("{} \n".format(line))
+        of.write("\n")
+    
+    def _write_parm(self,of,molecule = None):
+        if not isinstance(molecule, Molecule):
+            molecule=self.molecule
+        for line in molecule.parm:
+            of.write("{} \n".format(line))
+        of.write("\n")
+    
+    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}, oniom_opt = False):
+        logger.debug("Writing gaussian input file ...")
+        """ write input files for oniom calculations
+
+        Input:
+            oniom_opt :: hybrid, me, full_ee, ee_sp, False :: chose optimisation method
+        """
+        # NOTE: ONIOM uses RFO as standard. we use the gaussian standard optimizer
+        # we setup the opt args assuming that we start a simple optimisation. 
+        # if we perform other steps prior to optimisation we update them in each section accordingly
+        opt_args = {
+            "guess" : ["Mix","always"],
+            "geom" : ["connectivity"],
+            "opt" : None,
+            "nosymm" : None,
+            "scf" : ["XQC","MaxConven=75"] }
+        opt_args.update(route_args)
+        # SECTION 1: STABLE=OPT single point
+        if oniom_opt == "me" or oniom_opt == "hybrid" or oniom_opt == "ee_sp":
+            self._adjust_oniom_embedding(ee=False)
+        ## should we perform a stability analysis prior to optimisation?
+        if initial_stab_opt:
+            # we update the opt_args here for the next step:
+            ## Note: we do not use modredundant in oniom calculations
+            opt_args.update({"guess" : "read", "geom" : ["allcheck"]})
+            self._write_link0(of)
+            self._write_route(of, args = {
+                "guess" : "mix",
+                "stable" : "opt",
+                "scf" :  ["XQC","MaxConven=75"] ,
+                "nosymm" : None,
+                "geom" : "connectivity" })
+            self._write_title(of)
+            self._write_molecule(of)
+            self._write_parm(of)
+            self._write_link1(of)
+        # SECTION 2: OPTIMISATION
+        ## in case we found an instability we use the stable wfn directly.        
+        if instability:
+            opt_args.update({"guess" : "read", "geom" : ["allcheck"]})
+        ## if we want a hybrid optimisation we optimize with mechanical embedding first 
+        ## otherwise, we can use the standard opt args and oniom_embedding
+        if oniom_opt == "hybrid" :
+            self._write_link0(of)
+            self._adjust_oniom_embedding(ee=False)
+            self._write_route(of, args = opt_args)
+            if not "allcheck" in opt_args["geom"]:
+                self._write_title(of)
+                self._write_molecule(of)
+            #self._write_modredundant(of,modredundant)
+            self._write_parm(of)
+            self._write_link1(of)
+            self._adjust_oniom_embedding(ee=True)
+        self._write_link0(of)
+        self._write_route(of, args = opt_args)
+        if not "allcheck" in opt_args["geom"]:
+            self._write_title(of)
+            self._write_molecule(of)
+        #self._write_modredundant(of,modredundant)
+        self._write_parm(of)
+        # SECTION 3: FINAL STABLE=OPT
+        self._write_link1(of)
+        self._write_link0(of)
+        if oniom_opt == "ee_sp":
+            self._adjust_oniom_embedding(ee=True)
+        self._write_route(of, args = {
+            "guess" : "read",
+            "geom" : "allcheck",
+            "stable" : "opt",
+            "scf" :  ["XQC","MaxConven=75"] ,
+            "nosymm" : None })
+        of.write("\n\n")
+        logger.debug("Finished writing gaussian input file.")
+
+    def write_sp_input(self, of, route_args={}):
+        logger.debug("Writing gaussian sp input file ...")
+        opt_args = {
+            "guess" : ["Mix"],
+            "stable" : "opt",
+            "scf" : "XQC",
+            "nosymm" : None }
+        opt_args.update(route_args)
+        self._write_link0(of)
+        self._write_route(of, args = opt_args)
+        self._write_title(of)
+        self._write_molecule(of)
+        of.write("\n\n")
+        logger.debug("Finished writing gaussian sp input file.")
+    
+    def _adjust_oniom_embedding(self, ee=True):
+        lot = self.route["level_of_theory"].upper().rstrip("=EMBEDCHARGE")
+        if ee:
+            lot += ("=EMBEDCHARGE")
+        self.route["level_of_theory"] = lot
+
+class AmberInput(OniomInput):
+    """ the gaussian base class for pure AMBER calculations """
+
+    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}, oniom_opt = False):
+        logger.debug("Writing gaussian input file ...")
+        """ write input files for oniom calculations
+
+        Input:
+            we ignore most of the input arguments. mainly we use the route_args.
+        """
+        # NOTE: ONIOM uses RFO as standard. we use the gaussian standard optimizer
+        # we setup the opt args assuming that we start a simple optimisation. 
+        # if we perform other steps prior to optimisation we update them in each section accordingly
+        opt_args = {
+            "guess" : ["Mix","always"],
+            "geom" : ["connectivity"],
+            "opt" : ["NoMicro"],
+            "nosymm" : None,
+            "scf" : ["XQC","MaxConven=75"] }
+        opt_args.update(route_args)
+        # SECTION 2: OPTIMISATION
+        self._write_link0(of)
+        self._write_route(of, args = opt_args)
+        self._write_title(of)
+        self._write_molecule(of)
+        #self._write_modredundant(of,modredundant)
+        self._write_parm(of)
+        of.write("\n\n")
+        logger.debug("Finished writing gaussian input file.")
         
 class CheckGaussianLogfile():
     """ Process gaussian log files and check for errors
@@ -365,8 +511,38 @@ class CheckGaussianLogfile():
         return(raw_coords)
 
 
+class CheckOniomLogfile(CheckGaussianLogfile):
+    """ Process gaussian log files and check for errors in ONIOM calculations
 
-        
+        self.instability -> boolean (True if an instability has been found)
+        self.stationary -> boolean (True if stationary point has been found)
+        self.error -> boolean (True if last termination was not a Normal termination.)
+    """
+    def __init__(self, *args):
+        super().__init__(*args)
+        self._find_scf_energy = re.compile("ONIOM: extrapolated energy =")
+    
+    def _read_scf_energy(self, line):
+        if self._find_scf_energy.search(line):
+            temp = line.split()
+            self.scf_energy = temp[0] + " = " + temp[4]
+
+class CheckAmberLogfile(CheckGaussianLogfile):
+    """ Process gaussian log files and check for errors in pure AMBER calculations
+
+        self.instability -> boolean (True if an instability has been found)
+        self.stationary -> boolean (True if stationary point has been found)
+        self.error -> boolean (True if last termination was not a Normal termination.)
+    """
+    def __init__(self, *args):
+        super().__init__(*args)
+        self._find_scf_energy = re.compile("^ Energy=")
+    
+    def _read_scf_energy(self, line):
+        if self._find_scf_energy.search(line):
+            temp = line.split()
+            self.scf_energy = temp[0] + " = " + temp[1]
+
 #the following functions are kept for backwards compatibility and will
 #be removed in future versions
 def read_instability_from_log(filename):
