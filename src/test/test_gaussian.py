@@ -44,39 +44,20 @@ if __name__ == "__main__":
     print()
     test = g.GaussianInput()
     print()
-    print("_write_link0:") 
-    test._write_link0(of=sys.stdout)
-    test._write_link0(of=sys.stdout,args={"%rwf": "test.rwg"})
-    print()
-    print("_write_route:")
-    test._write_route(of=sys.stdout)
-    test._write_route(of=sys.stdout, args={"opt": ["maxcyc=100","calcfc","rfo"] })
-    print()
-    print("_write_title:")
-    test._write_title(of=sys.stdout)
-    print("\n\n")
-    print("---------------------")
-    print("\n\n")
-    print("Read write molecule")
     test.molecule.read_xyz(xyz_file)
-    print(test.molecule)
-    print("\n\n")
-    print("---------------------")
-    print("\n\n")
-    print("Test write_input():")
-    test.write_input(of=sys.stdout,modredundant=["1 11 F","2 8 F"])
-    print("\n\n")
-    print("---------------------")
-    print("\n\n")
-    print("Test write_sp_input():")
-    test.write_sp_input(of=sys.stdout)
-
-
+    test.link0.chk="tst.chk"
+    route="#P PM6 IOP(2/15=3) OPT=Modredundant"
+    test.write_inputfile(link1=False,route=route,geom=True, modredundant=["1 2 F","1 3 F"])
+    route="#P PM6 IOP(2/15=3) Freq guess=read geom=allcheck"
+    test.write_inputfile(link1=True,route=route,geom=False)
+    route="#P PM6 IOP(2/15=3) OPT guess=read geom=allcheck"
+    test.write_inputfile(link1=True,route=route,geom=False )
+    route="#P PM6 IOP(2/15=3) FREQ guess=read geom=allcheck"
+    test.write_inputfile(link1=True,route=route,geom=False )
 
     # CheckGaussianLogfile
     mylog = g.CheckGaussianLogfile("example.log")
     mylog.read_log()
-
     print(f"Reading File {mylog.filename}")
 
     print(f"Instability: {mylog.instability}")

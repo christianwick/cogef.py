@@ -1,6 +1,7 @@
 
 import logging
 import re
+import sys
 
 from collections import OrderedDict
 from cogef.molecule import Molecule
@@ -9,195 +10,75 @@ from cogef.mulliken import Mulliken
 
 logger = logging.getLogger("gaussian")
 
+
+class classLink0():
+    def __init__(self,chk=None,mem="30GB",nproc="12"):
+        self.chk = chk
+        self.mem = mem
+        self.nproc = nproc
+    
+    def __str__(self):
+        lines = ""
+        if self.chk:
+            lines += "%chk=" + self.chk.strip() + "\n"
+        lines += "%mem=" + self.mem.strip() + "\n"
+        lines += "%nproc=" + self.nproc.strip() + "\n"
+        lines += "\n"
+        return(lines)
+
 class GaussianInput():
-    """ the gaussian base class """
-    def __init__(self, filename="", 
-                    title="Gen by cogef",
-                    chkfile="cogef.chk",
-                    mem="12GB",
-                    nproc="12",
-                    elements=None, 
-                    coordinates=None,
-                    fragments=None,
-                    charge=None,
-                    multiplicity=None,
-                    route = "#P test",
-                    method="UB3LYP/D95(d,p)"):
+    """ the gaussian base class 
+    
+    Parameters:
+        of : open file handle
+        mem : str   
+        nproc : str
+        charge_multi : str
+    
+    """
+    def __init__(self, of=sys.stdout, mem="12GB", nproc="12", charge_multi = "0 1"):
         logger.debug("Initialise gaussian base class")
-        self.filename = filename
-        self.molecule = Molecule(
-                    elements=elements, 
-                    coordinates=coordinates,
-                    fragments=fragments,
-                    charge=charge,
-                    multiplicity=multiplicity)
-        self.title = title
-        self.link0 = OrderedDict( {
-                "%chk" : chkfile,
-                "%mem" : mem,
-                "%nproc" : nproc })
-        self.route = OrderedDict({
-                "route" : route ,
-                "level_of_theory" : method })                      
+        self.of = of
+        self.molecule = Molecule(charge_multi=charge_multi)
+        self.comment = "gen by cogef.py"
+        self.link0 = classLink0(mem=mem,nproc=nproc)   
 
-    def _write_link0(self, of, args={}):
-        temp = self.link0.copy()
-        temp.update(args)
-        for arg,val in temp.items():
-            of.write("{}={}\n".format(arg,val))
-        of.write("\n")
+    def write_inputfile(self,link1=False, route="#P",geom=True, modredundant=None):
+        """
+        general routine to write gaussian input files.
 
-    def _write_route(self, of, args={}, method=None):
-        temp = self.route.copy()
-        temp.update(args) 
-        if isinstance(method,str):
-            temp.update( {"level_of_theory" : method })
-        route = temp.pop("route")
-        lot = temp.pop("level_of_theory")
-        of.write("{} {} ".format(route,lot))
-        for arg, val in temp.items():
-            if val == None:
-                of.write("{} ".format(arg))
-            elif isinstance(val,list):
-                of.write("{}=(".format(arg))
-                for el in val[:-1]:
-                    of.write("{},".format(el))
-                of.write("{}) ".format(val[-1]))
-            else:
-                of.write("{}={} ".format(arg,val))
-        of.write("\n\n")
 
-    def _write_title(self, of, title=None):
-        if isinstance(title,str):
-            of.write("{}\n".format(title.strip()))
-        else:
-            of.write("{}\n".format(self.title.strip()))
-        of.write("\n")
-
-    def _write_molecule(self,of,molecule=None):
-        if not isinstance(molecule, Molecule):
-            molecule=self.molecule
-        of.write(str(molecule))
-        of.write("\n")
+        """
+        # link1
+        if link1: self.of.write("--link1--\n")
+        # link0
+        self.of.write(str(self.link0))
+        # route
+        self.of.write(route.strip())
+        self.of.write("\n")
+        self.of.write("\n")
+        # comment and
+        # molecule specification
+        if geom:
+            self.of.write(self.comment.strip())
+            self.of.write("\n")
+            self.of.write("\n")
+            self.of.write(str(self.molecule))
+            self.of.write("\n")
+        # modredundant
+        if modredundant:
+            self._write_modredundant(modredundant)
+        self.of.write("\n")
     
-    def _write_modredundant(self, of, args=["1 11 F"]):
+    def _write_modredundant(self, args=["1 11 F"]):
         for val in args:
-            of.write("{} \n".format(val))
-        of.write("\n")
-    
-    def _write_link1(self,of):
-        of.write("--link1--\n")
-
-    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}, **kwargs):
-        logger.debug("Writing gaussian input file ...")
-        opt_args = {
-            "guess" : ["Mix","always"],
-            "geom" : "Modredundant",
-            "opt" : ["CalcFc","RFO"],
-            "nosymm" : None,
-            "scf" : ["XQC","MaxConven=75"] }
-        opt_args.update(route_args)
-        # should we perform a stability analysis prior to optimisation?
-        if initial_stab_opt:
-            opt_args.update({"guess" : "read", "geom" : ["Modredundant","allcheck"]})
-            self._write_link0(of)
-            self._write_route(of, args = {
-                "guess" : "mix",
-                "stable" : "opt",
-                "scf" :  ["XQC","MaxConven=75"] ,
-                "nosymm" : None })
-            self._write_title(of)
-            self._write_molecule(of)
-            self._write_link1(of)
-        # in case we found an instability we use the stable wfn directly.        
-        if instability:
-            opt_args.update({"guess" : "read", "geom" : ["Modredundant","allcheck"]})
-        self._write_link0(of)
-        self._write_route(of, args = opt_args)
-        if not "allcheck" in opt_args["geom"]:
-            self._write_title(of)
-            self._write_molecule(of)
-        self._write_modredundant(of,modredundant)
-        self._write_link1(of)
-        self._write_link0(of)
-        self._write_route(of, args = {
-            "guess" : "read",
-            "geom" : "allcheck",
-            "stable" : "opt",
-            "scf" :  ["XQC","MaxConven=75"] ,
-            "nosymm" : None })
-        of.write("\n\n")
-        logger.debug("Finished writing gaussian input file.")
-
-    def write_sp_input(self, of, route_args={}):
-        logger.debug("Writing gaussian sp input file ...")
-        opt_args = {
-            "guess" : ["Mix"],
-            "stable" : "opt",
-            "scf" : "XQC",
-            "nosymm" : None }
-        opt_args.update(route_args)
-        self._write_link0(of)
-        self._write_route(of, args = opt_args)
-        self._write_title(of)
-        self._write_molecule(of)
-        of.write("\n\n")
-        logger.debug("Finished writing gaussian sp input file.")
-
-
-    
-
-class GaussianInputWithFragments(GaussianInput):  
-    def _write_molecule_with_fragments(self,of,molecule=None,fragment=None):
-        if not isinstance(molecule, Molecule):
-            molecule=self.molecule
-        if fragment == None:
-            of.write(str(molecule))
-        else:
-            for ii in range(len(molecule.elements)):
-                if ii in fragment:
-                    molecule.elements[ii] += "(Fragment=1)"
-                else:
-                    molecule.elements[ii] += "(Fragment=2)"
-            for i,j in zip(molecule.charge,molecule.multiplicity):
-                of.write("{} {} ".format(i,j))
-            of.write("\n")
-            for el, coord in zip(molecule.elements,molecule.coordinates):
-                of.write("{:3s} {:14.8f} {:14.8f} {:14.8f} \n".format(el,*coord))
-        of.write("\n")
-
-    def write_input_fragment_guess(self,of,modredundant,fragment):
-        logger.debug("Writing gaussian input file with fragments...")
-        self._write_link0(of)
-        self._write_route(of, args = {"guess": ["fragment=2","only"]})
-        self._write_title(of)
-        self._write_molecule_with_fragments(of,fragment=fragment)
-        self._write_link1(of)
-        self._write_link0(of)
-        self._write_route(of, args = {
-            "guess" : ["read"],
-            "geom" : ["Modredundant","allcheck"],
-            "opt" : ["CalcFc","RFO","maxcyc=100"],
-            "nosymm" : None,
-            "scf" : "XQC" })
-        self._write_modredundant(of,modredundant)
-        self._write_link1(of)
-        self._write_link0(of)
-        self._write_route(of, args = {
-            "guess" : "read",
-            "geom" : "allcheck",
-            "stable" : "opt",
-            "scf" : "XQC",
-            "nosymm" : None })
-        of.write("\n\n")
-        logger.debug("Finished writing gaussian input file with fragments.")
-
-
+            self.of.write("{} \n".format(val))
+        self.of.write("\n")
 
 class OniomInput(GaussianInput):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.molecule = OniomMolecule(charge = self.molecule.charge, multiplicity = self.molecule.multiplicity)
+        self.molecule = OniomMolecule(charg_multi = self.molecule.charge_multi)
     
     def _write_molecule(self,of,molecule=None):
         if not isinstance(molecule, Molecule):
@@ -351,7 +232,7 @@ class CheckGaussianLogfile():
         self.stationary -> boolean (True if stationary point has been found)
         self.error -> boolean (True if last termination was not a Normal termination.)
     """
-    def __init__(self, filename):
+    def __init__(self, filename=None):
         logger.debug("Initialise CheckGaussianLogfile class")
         self._find_normal_termination = re.compile("Normal termination")
         self._find_instab = re.compile("The wavefunction has an internal instability.")
