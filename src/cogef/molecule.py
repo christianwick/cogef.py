@@ -16,15 +16,13 @@ class Molecule():
     def __init__(self, elements=None, 
                     coordinates=None,
                     fragments=None,
-                    charge=None,
-                    multiplicity=None,
+                    charge_multi="0 1",
                     comment=""):
         logger.debug("Initialise new molecule")
         self.elements = elements
         self.fragments = fragments
         self.coordinates = np.array(coordinates)
-        self.charge = charge
-        self.multiplicity = multiplicity
+        self.charge_multi = charge_multi.strip()
         self.comment = comment
         self.energy = None
         self.spin = None
@@ -33,8 +31,7 @@ class Molecule():
 
     def __str__(self):
         string=""
-        for i,j in zip(self.charge,self.multiplicity):
-            string += "{} {} ".format(i,j)
+        string += self.charge_multi
         string += "\n"
         for el, coord in zip(self.elements,self.coordinates):
             string += "{:3s} {:14.8f} {:14.8f} {:14.8f} \n".format(el,*coord)
@@ -255,11 +252,34 @@ class Molecule():
 
 
 class OniomMolecule(Molecule):
+    """
+    ONIOM Molecule. 
+
+    Additional Parameters:
+        self.connectivity : list
+        self.coordinates : list 
+        self.parm : list 
+        self.opt_flags : list 
+        self.layer : list 
+        self.link_atom : list 
+        self.mm_elements : list 
+        self.high_layer_idx : list 
+        self.medium_layer_idx : list 
+        self.low_layer_idx : list 
+            idx - internal atom numbers which belong to respective layer.
+
+    Additional Functions:
+        read_oniom_template()
+        write_xyz()
+        write_layer_xyz()
+        write
+    
+    """
     def read_oniom_template(self,inpstr):
         self.connectivity = []
         self.coordinates = []
         self.parm = []
-        self.freeze_code = []
+        self.opt_flags = []
         self.layer = []
         self.link_atom = []
         self.mm_elements = []
@@ -279,7 +299,7 @@ class OniomMolecule(Molecule):
             elif block == 0:
                 data = self._read_molecule_spec(temp)
                 self.mm_elements.append(data[0])
-                self.freeze_code.append(data[1])
+                self.opt_flags.append(data[1])
                 self.coordinates.append(data[2])
                 self.layer.append(data[3])
                 self.link_atom.append(data[4])
@@ -289,11 +309,15 @@ class OniomMolecule(Molecule):
             elif block == 2:
                 self.parm.append(line.strip())
         self.coordinates = np.array(self.coordinates)    
+        self.high_layer_idx = [ x for x,l in enumerate(self.layer) if l == "H" ]
+        self.medium_layer_idx = [ x for x,l in enumerate(self.layer) if l == "M" ]
+        self.low_layer_idx = [ x for x,l in enumerate(self.layer) if l == "L" ]
+        self.active_atoms_idx = [ x for x,l in enumerate(self.opt_flags) if l == 0 ]
         logger.debug("Finished reading coordinates.")
 
     def _read_molecule_spec(self,line):
         element = ""
-        freeze_code = ""
+        opt_flag = ""
         coordinate = []
         layer = ""
         link_atom = ""
@@ -304,20 +328,50 @@ class OniomMolecule(Molecule):
             coordinate = [float(temp[1]),float(temp[2]),float(temp[3])]
         if num_entries >= 6:
             element = temp[0]
-            freeze_code = temp[1]
+            opt_flag = int(temp[1])
             coordinate = [float(temp[2]),float(temp[3]),float(temp[4])]
             layer = temp[5]
         if num_entries >= 7:
             link_atom = temp[6]
-        return(element, freeze_code, coordinate, layer, link_atom)
+        return(element, opt_flag, coordinate, layer, link_atom)
+
+    def write_xyz(self, filename, comment="", write_mode="w"):
+        super().write_xyz(filename, comment, write_mode)
+        if isinstance(filename,TextIOWrapper):
+            filename = filename.name
+        self.write_layer_xyz(filename + "_high.xyz", comment=comment, write_mode=write_mode, symbol="H")
+        self.write_layer_xyz(filename + "_medium.xyz", comment=comment, write_mode=write_mode, symbol="M")
+        self.write_layer_xyz(filename + "_low.xyz", comment=comment, write_mode=write_mode, symbol="L")
+
+    def write_layer_xyz(self,filename, comment="", write_mode="w", symbol="H"):
+        mol = Molecule()
+        if symbol == "H": layer_idx = self.high_layer_idx
+        elif symbol == "M": layer_idx = self.medium_layer_idx
+        else: layer_idx = self.low_layer_idx
+        mol.elements = [ self.elements[i] for i in layer_idx ]
+        mol.coordinates  = [ self.coordinates[i] for i in layer_idx ]
+        mol.comment = self.comment
+        mol.write_xyz(filename,comment,write_mode)
+
+    def update_opt_flags(self,atoms,flag=-1):
+        """
+        read in a list of atoms and set the opt flags to flag
+        
+        Parameters: atoms : list of int
+                    flag : int
+        """
+        logger.debug("Updating opt flags..")
+        for idx in range(len(self.opt_flags)):
+            if idx in atoms:
+                self.opt_flags[idx] = int(flag)
+        
     
     def __str__(self):
         string=""
-        for i,j in zip(self.charge,self.multiplicity):
-            string += "{} {} ".format(i,j)
+        string += self.charge_multi
         string += "\n"
-        for el, freeze_code, coord, layer, link_atom in zip(self.mm_elements, self.freeze_code, self.coordinates, self.layer, self.link_atom):
-            string += "{:20s} {:3s} {:14.8f} {:14.8f} {:14.8f} {:3s} {:3s} \n".format(el,freeze_code,*coord,layer,link_atom)
+        for el, opt_flags, coord, layer, link_atom in zip(self.mm_elements, self.opt_flags, self.coordinates, self.layer, self.link_atom):
+            string += "{:20s} {:3d} {:14.8f} {:14.8f} {:14.8f} {:3s} {:3s} \n".format(el,opt_flags,*coord,layer,link_atom)
         string += "\n"
         for line in self.connectivity:
             string += "{} \n".format(line)
@@ -326,14 +380,7 @@ class OniomMolecule(Molecule):
             string += "{} \n".format(line)
         return(string)
 
-    def write_oniom(self):
-        pass
 
-    def write_connectivity(self):
-        pass
-
-    def write_parm(self):
-        pass
         
 
               

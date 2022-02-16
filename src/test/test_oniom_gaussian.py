@@ -111,7 +111,7 @@ if __name__ == "__main__":
     print("---------------------")
     print("\n\n")
     print("Test write_input():")
-    test.write_input(of=sys.stdout,modredundant=["1 11 F","2 8 F"])
+    test.write_inputfile(link1=False, route="#P",geom=True,connectivity=True, modredundant=["1 2 F"], parm=True)
 
 
 
