@@ -114,7 +114,6 @@ class OniomInput(GaussianInput):
     def __init__(self,charge_multi = "0 1 0 1 0 1", **kwargs):
         super().__init__(**kwargs)
         self.molecule = OniomMolecule(charge_multi = charge_multi)
-        self.high_layer = Molecule(charge_multi = charge_multi)
     
     def _write_molecule(self):
         self.of.write(self.molecule.charge_multi)
@@ -174,32 +173,6 @@ class OniomInput(GaussianInput):
 class AmberInput(OniomInput):
     """ the gaussian base class for pure AMBER calculations """
 
-    def write_input(self,of,modredundant, initial_stab_opt = False, instability=False, route_args={}, oniom_opt = False):
-        logger.debug("Writing gaussian input file ...")
-        """ write input files for oniom calculations
-
-        Input:
-            we ignore most of the input arguments. mainly we use the route_args.
-        """
-        # NOTE: ONIOM uses RFO as standard. we use the gaussian standard optimizer
-        # we setup the opt args assuming that we start a simple optimisation. 
-        # if we perform other steps prior to optimisation we update them in each section accordingly
-        opt_args = {
-            "guess" : ["Mix","always"],
-            "geom" : ["connectivity"],
-            "opt" : ["NoMicro"],
-            "nosymm" : None,
-            "scf" : ["XQC","MaxConven=75"] }
-        opt_args.update(route_args)
-        # SECTION 2: OPTIMISATION
-        self._write_link0(of)
-        self._write_route(of, args = opt_args)
-        self._write_title(of)
-        self._write_molecule(of)
-        #self._write_modredundant(of,modredundant)
-        self._write_parm(of)
-        of.write("\n\n")
-        logger.debug("Finished writing gaussian input file.")
         
 class CheckGaussianLogfile():
     """ Process gaussian log files and check for errors

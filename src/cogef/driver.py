@@ -427,11 +427,6 @@ class oniom_cogef_loop(cogef_loop):
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
                 if self.constraint == "modredundant": route.opt.append("modredundant")
                 if read_guess: route.guess =  ["read"]
-                route = "#P " + self.level_of_theory + " nosymm  geom=connect "
-                route += " IOp(2/15=3) "
-                if read_guess: route += "guess=read "
-                if self.constraint == "modredundant": route += "OPT=(Mic120,Quadmac,modredundant,MaxCyc=50)"
-                elif self.constraint == "opt_flag": route += "OPT=(Mic120,Quadmac,MaxCyc=50)" 
                 self.ginp.write_inputfile(link1=False,route=route, geom=True, connectivity=True, 
                         modredundant=self.modredundant,parm=True)
 
@@ -575,3 +570,66 @@ class oniom_cogef_loop(cogef_loop):
                 self.ginp.write_inputfile(link1=True,route=route, geom=False, connectivity=False, 
                         modredundant=self.modredundant,parm=False)
     
+
+class amber_cogef_loop(oniom_cogef_loop):
+    """
+    this modifies the cogef_loop class to run AMBER type cogef calculations with gaussian.
+
+    additional Parameters: (to all parameters of the base class)
+        ambertemplate : of
+
+        constraint : string
+            choices: "modredundant", "opt_flag"
+            select method used to constrain atoms in the cogef calculation. 
+
+    """
+    def __init__(self, ambertemplate, constraint="modredundant", xyz=None, **kwargs):
+        """ 
+        we reuse most of the code for ONIOM type calculations. 
+
+        since FF calculations do not distinguish between unrestricted and restricted,
+        the runtype does not affect this calculation.
+
+        """
+        cogef_loop.__init__(self,**kwargs)
+        self.constraint = constraint
+        self.glog = gaussian.CheckAmberLogfile()
+        self.ginp = gaussian.AmberInput(mem=self.ginp.link0.mem, nproc = self.ginp.link0.nproc,
+             charge_multi = self.ginp.molecule.charge_multi)
+        self.ginp.molecule.read_oniom_template(ambertemplate)
+        if xyz:
+            self.ginp.molecule.read_xyz(xyz)
+        if self.constraint == "opt_flag":
+            logger.debug("setting opt flags..")
+            self.convert_modredundant_to_opt_flags()
+            self.modredundant = None
+        self.write_ginp = self._write_ginp
+        # independent of runtype:
+        self.check_error = True
+        self.check_stationary = True
+        self.check_stability = False
+        self.mix_guess = False
+
+
+    def _write_ginp(self,ginp_filename="",**kwargs):
+        """
+        generate input file for amber cogef calculations. T
+        The constraint used, can be added as a modredundant section or using the optimisation flag.
+
+        Paramter: 
+                ginp_filename : str 
+                        filename of the ginp file that should be generated.
+
+        """
+        with open(ginp_filename, "w") as of:
+            self.ginp.of = of
+            # JOB 1
+            route = gaussian.classGaussianRoute()
+            route.route = [self.print_level, self.level_of_theory, "nosymm", "test"] 
+            route.iop = ["2/15=3"]
+            route.geom = ["connect"]
+            route.opt = ["NoMicro"]
+            if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
+            if self.constraint == "modredundant": route.opt.append("modredundant")
+            self.ginp.write_inputfile(link1=False,route=route, geom=True, connectivity=True, 
+                    modredundant=self.modredundant,parm=True)

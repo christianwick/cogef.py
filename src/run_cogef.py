@@ -30,8 +30,9 @@ if __name__ == "__main__":
     group_molecule.add_argument("-xyz", required=True, help="xyz file",type=argparse.FileType('r'))
     group_molecule.add_argument("-cm",help="charge and multiplictiy line",type=str, default="0 1")
     
-    group_oniom = parser.add_argument_group("ONIOM")
+    group_oniom = parser.add_argument_group("ONIOM/AMBER calculations")
     group_oniom.add_argument("-oniom", help="oniom template file",type=argparse.FileType('r'))
+    group_oniom.add_argument("-amber", help="amber template file",type=argparse.FileType('r'))
     group_oniom.add_argument("-oniomopt", help="oniom opt method: hybrid,me or ee_sp",choices=["hybrid","me","ee","ee_sp"],type=str)
     group_oniom.add_argument("-constraint", help="oniom constraints: modredundant or opt_flag",
             choices=["modredundant","opt_flag"], type=str, default="modredundant")
@@ -89,9 +90,12 @@ if __name__ == "__main__":
                     "reverse" : None, "restart" : args.restart, "modredundant" : None, "symm_stretch" : args.symm_stretch, 
                     "dp" : args.dp, "fragment" : args.fragment, "max_error_cycles"  : 5, 
                     "trajectory" : args.trajectory, "checkpoint" : args.checkpoint,
-                    "oniomtemplate" : args.oniom, "oniomopt" : args.oniomopt, "constraint" : args.constraint }
+                    "oniomtemplate" : args.oniom, "ambertemplate" : args.amber, "oniomopt" : args.oniomopt,
+                     "constraint" : args.constraint }
     if args.oniom:
         data = driver.oniom_cogef_loop(**driver_args)
+    elif args.amber:
+        data = driver.amber_cogef_loop(**driver_args)
     else:
         data = driver.cogef_loop(**driver_args)
     data.run()
