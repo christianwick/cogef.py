@@ -6,10 +6,10 @@ import logging
 logger = logging.getLogger("mulliken")
 
 class Mulliken():
-    def __init__(self, atom_number=[], atom_name=[], 
-        charge=[], spin=[]):
+    def __init__(self):
         """ The Mullikan base class.
 
+        Internal Parameters:
             self.atom_name = list (atom name associated with)
             self.atom_number = list (atom number)
             self.charge = list (mulliken charges)
@@ -17,10 +17,10 @@ class Mulliken():
 
         """
         logger.debug("Initialise new Mulliken class")
-        self.atom_name = atom_name
-        self.atom_number = atom_number
-        self.charge = charge
-        self.spin = spin 
+        self.atom_name = []
+        self.atom_number = []
+        self.charge = []
+        self.spin = [] 
 
     def __str__(self):
         mystr = ""
@@ -71,10 +71,12 @@ class Mulliken():
         for nn, sp in enumerate(self.spin):
             if abs(sp) >= thresh:
                 temp.append(nn)
-        return ( Mulliken( [ self.atom_number[i] for i in temp ],
-                   [ self.atom_name[i] for i in temp ],
-                   [ self.charge[i] for i in temp ], 
-                   [ self.spin[i] for i in temp ]) )
+        temp_mul = Mulliken()
+        temp_mul.atom_number = [ self.atom_number[i] for i in temp ]
+        temp_mul.atom_name = [ self.atom_name[i] for i in temp ]
+        temp_mul.charge = [ self.charge[i] for i in temp ]
+        temp_mul.spin = [ self.spin[i] for i in temp ]
+        return ( temp_mul )
 
 
 

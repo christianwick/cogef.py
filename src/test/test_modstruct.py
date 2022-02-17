@@ -51,7 +51,7 @@ if __name__ == "__main__":
         coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
                 atom1 = 0, atom2 = 10,
                 fragment=[0,1,2,3], 
-                dx = 0.5, 
+                dx = 1.0, 
                 dp = 1.0, 
                 symmetric=True)
         print("Cycle: {}".format(counter))
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
                 atom1 = 0, atom2 = 10,
                 fragment=[], 
-                dx = 0.5, 
+                dx = 5.0, 
                 dp = 1.0, 
                 symmetric=True)
         print("Cycle: {}".format(counter))

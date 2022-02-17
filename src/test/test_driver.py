@@ -33,7 +33,6 @@ if __name__ == "__main__":
     print("----------------------------")
     print()
     print()
-    cogef = driver.cogef_loop("restricted",1, 7,cycles=2)
-    cogef.ginp.molecule.read_xyz(xyz_file)
+    cogef = driver.cogef_loop(atom1=0,atom2=10,xyz=xyz_file,cycles=2,dx=5.0,dp=1.0,fragment=[0,1,2,3,4,5,6],runtype="restricted")
     cogef.run()
 

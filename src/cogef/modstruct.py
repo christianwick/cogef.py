@@ -94,7 +94,7 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, dp=1.0, fragment=[0,1,2,3], sym
             elif ii == atom2:
                 logger.debug("move anchor {} in + direction.".format(ii) )
                 u[ii,:] +=  vec_dx
-            if len(fragment) > 0:
+            elif len(fragment) > 0:
                 if ii in fragment:
                     logger.debug("move atom {} in - direction.".format(ii) )
                     u[ii,:] -=  vec_dp
