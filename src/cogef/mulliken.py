@@ -37,6 +37,7 @@ class Mulliken():
         Input: 
             raw_data = list (str)
         """
+        logger.debug("Reading gaussian raw data.")
         atom_number, atom_name, charge, spin = [], [], [], []
         for line in raw_data:
             temp = line.split()
@@ -67,6 +68,7 @@ class Mulliken():
         self.atom_number, self.atom_name, self.charge, self.spin = [list(l) for l in zip(*sorted_data) ]
 
     def find_spin_larger_than(self, thresh = 0.5 ):
+        logger.debug(f"Searching for spins larger than {thresh}")
         temp = []
         for nn, sp in enumerate(self.spin):
             if abs(sp) >= thresh:
@@ -76,6 +78,7 @@ class Mulliken():
         temp_mul.atom_name = [ self.atom_name[i] for i in temp ]
         temp_mul.charge = [ self.charge[i] for i in temp ]
         temp_mul.spin = [ self.spin[i] for i in temp ]
+        logger.debug(f"Found spins larger than {thresh} \n {temp_mul}")
         return ( temp_mul )
 
 

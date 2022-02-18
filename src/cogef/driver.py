@@ -33,7 +33,7 @@ class cogef_loop():
                     level_of_theory = "B3LYP/6-31G*" , mem = "4GB", nproc = "12", print_level="#P",
                     maxcyc = None, maxconv = 75, startchk = False, cm = "0 1",
                     cycles = 1, reverse = None, restart = 0, modredundant=None, symm_stretch=True, 
-                    dp=1.0, fragment=[], max_error_cycles = 5, 
+                    dp=1.0, fragment=[], max_error_cycles = 5, mulliken_h = False,
                     trajectory = None, checkpoint = None , **kwargs):
         """
         initalise all important parameters
@@ -78,14 +78,17 @@ class cogef_loop():
                         contains all the atoms of the first fragment to be stretched.
                     max_error_cycles : int
                         set the maximum number of errors to restart each cycle.
+                    mulliken_h : boolean
+                        if True, use mulliken charges with Hydrogen atoms summed into
+                        heavy atoms to check bonging. use standard Mulliken charges otherwise.
                     trajectory : of,None
                     checkpoint : of,None
                         write trajectory / checkpoint file if points to an open file
 
         internal Parameters:
-                    check_stability : boolean   
-                    check_error : boolean
-                    check_stationary : boolean
+                    self.check_stability : boolean   
+                    self.check_error : boolean
+                    self.check_stationary : boolean
                         check for stability / error termination / stationary 
                             point if True
         
@@ -105,6 +108,7 @@ class cogef_loop():
         self.print_level = print_level
         self.maxcyc = maxcyc
         self.maxconv = maxconv
+        self.mulliken_h = mulliken_h
         if xyz:
             self.ginp.molecule.read_xyz(xyz)
         self.trajectory = trajectory
@@ -126,7 +130,13 @@ class cogef_loop():
         # loop_range for cogef main loop
         if reverse:
             # we loop from reverse n cycles backwards. smallest point is 000
+            # and set dx to a negative value
+            # and finally tell the glog class that we already found a broken
+            # structure to avoid printing of another structure with a broken bond
+            # by setting self.glog.found_broken_bond = True
             self.loop_range = range(reverse, max(-1, reverse - cycles -1 ), -1)
+            self.dx = -abs(self.dx)
+            self.glog.found_broken_bond = True
         else:
             self.loop_range = range(restart, cycles +1 )
 
@@ -150,7 +160,7 @@ class cogef_loop():
         # start the outer cogef loop
         read_guess = False
         for cycle in self.loop_range:
-            logger.info("Starting cycle {}".format(cycle))
+            logger.info("Starting cycle {} out of a maximum of {}".format(cycle,max(self.loop_range)))
             basename = "cogef_{:03d}".format(int(cycle))
             glog_filename = basename + ".log"
             ginp_filename = basename + ".com"   
@@ -255,8 +265,10 @@ class cogef_loop():
                             True if no error was found, False otherwise
         """
         self.glog.filename = filename
-        self.glog.read_log()
-        self.glog.check_bonding()
+        self.glog.read_log(self.mulliken_h)
+        if self.glog.check_bonding():
+            self.glog.molecule.write_xyz(f"broken_bond_at_{cycle}.xyz", 
+                comment=self.glog.comment_line(point=cycle))
         # check for instability or break out 
         # we also check for stationary points and move the old log files
         glog_is_ok = True

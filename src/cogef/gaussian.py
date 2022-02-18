@@ -177,9 +177,21 @@ class AmberInput(OniomInput):
 class CheckGaussianLogfile():
     """ Process gaussian log files and check for errors
 
-        self.instability -> boolean (True if an instability has been found)
-        self.stationary -> boolean (True if stationary point has been found)
-        self.error -> boolean (True if last termination was not a Normal termination.)
+        Parameters:
+            filename : str
+
+        Internal Parameters:
+            self.instability : boolean 
+                True if an instability has been found
+            self.stationary : boolean 
+                True if stationary point has been found
+            self.error : boolean
+                True if last termination was not a Normal termination.
+            self.found_borken_bond : bool
+                True if broken bond has been detected for the first time!
+            These internal variables will be updated each to you use self.read_log()
+
+
     """
     def __init__(self, filename=None):
         logger.debug("Initialise CheckGaussianLogfile class")
@@ -198,13 +210,31 @@ class CheckGaussianLogfile():
         self.instability = False
         self.stationary = False
         self.error = False
+        self.found_broken_bond = False
 
         self.spin = 0.0
         self.scf_energy = 0.0
         self.molecule = Molecule()
         self.mulliken = Mulliken()
     
-    def read_log(self):
+    def read_log(self, mulliken_h = False):
+        """
+        parse gaussian log files
+
+        Parameter:
+            mulliken_h : boolean
+                if True, use mulliken charges with hydrogens summed into 
+                heavy atoms. Use standard Mulliken charges otherwise.
+        
+        Internal Parameters to be updated every time you parse a log file:
+            self.instability
+            self.stationary
+            self.error
+            self.spin
+            self.scf_energy
+            self.found_broken_bond
+        
+        """
         self.instability = False
         self.stationary = False
         self.error = False
@@ -225,7 +255,8 @@ class CheckGaussianLogfile():
                 self._read_spin(line)
                 self._read_scf_energy(line)
                 self._read_struct(line, of)
-                self._read_mulliken_h(line, of)
+                if mulliken_h: self._read_mulliken_h(line, of)
+                else: self._read_mulliken(line, of)
                 last_line = line
             # we check only the last line for error terminations:
             self._check_termination(last_line)
@@ -237,6 +268,7 @@ class CheckGaussianLogfile():
 
     def check_bonding(self):
         logger.debug(f"Check bonding...")
+        new_broken_bond = False
         mul_spin_dens = self.mulliken.find_spin_larger_than(0.5)
         if len(mul_spin_dens.atom_number) >= 2:
             logger.info(f"Mulliken Spin densities larger than 0.5: \n{mul_spin_dens}")
@@ -246,7 +278,11 @@ class CheckGaussianLogfile():
             max_mulliken = mul_spin_dens.atom_number[-1] - 1 
             dist = self.molecule.distance(min_mulliken,max_mulliken)
             logger.info(f"Distance between atoms {min_mulliken +1 } and {max_mulliken + 1} = {dist:10.3f} A")
+            if self.found_broken_bond == False:
+                new_broken_bond = True
+                self.found_broken_bond = True
         logger.debug(f"Finished check bonding.")
+        return(new_broken_bond)
         
     def _read_instability(self,line):
         if self._find_instab.search(line):
@@ -300,6 +336,18 @@ class CheckGaussianLogfile():
             of.readline() # this is the line with 1 2
             self.mulliken._read_gaussian_raw_data(
                     self._read_mulliken_blocks(of,"Electronic spatial extent"))
+
+    def _read_mulliken(self, line, of):
+        """ 
+        Read MULLIKEN  data from gaussian log files
+        
+        input:  fin = open file read
+                line = string
+        """
+        if self._find_mulliken.search(line):
+            of.readline() # this is the line with 1 2
+            self.mulliken._read_gaussian_raw_data(
+                    self._read_mulliken_blocks(of,"Sum of Mulliken charges"))
 
     def comment_line(self, point=None, *args):
         comment = f"{self.scf_energy} | S**2 = {self.spin:.3f}"

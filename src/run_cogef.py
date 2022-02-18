@@ -13,10 +13,7 @@ import csv
 import json
 import argparse
 
-
-from cogef.constants import *
-from cogef import modstruct
-from cogef import gaussian
+import cogef
 from cogef import cogef_logging
 from cogef import driver as driver
 from cogef._version import __version__ 
@@ -24,6 +21,7 @@ from cogef._version import __version__
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('-v', action='version',version='%(prog)s {version}'.format(version=__version__))
     parser.add_argument("-at", required=True, help="atom1 atom2 starting at 1", type=str)
     
     group_molecule = parser.add_argument_group("molecule definition")
@@ -59,9 +57,13 @@ if __name__ == "__main__":
     group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1 as string, e.g. '1 2 3 4'",type=str, default="")
     group_tweaks.add_argument("-cycles", help="number n of cycles to run", type=int, default=1)
     group_tweaks.add_argument("-restart", help="restart from cylce n. needs guess.chk and checkpoint.xyz", type=int, default=1)
+    group_tweaks.add_argument("-reverse", help="reverse from cylce n. needs guess.chk and start geometry as .xyz", type=int, default=None)
     group_tweaks.add_argument("-symm_stretch", 
         help ="perform symmetric stretch moving both atoms (framgents). asymmetric otherwise.", action="store_true",
         default = False)
+    group_tweaks.add_argument("-mulliken_h", 
+        help ="use mulliken charges with Hydrogens summed into heavy atoms. Otherwise use standard mulliken charges",
+        action="store_true", default = False)
     
     group_logging = parser.add_argument_group("logging")
     group_logging.add_argument("-logfile", help="name of the logfile", type=str, default="job_cogef.log")
@@ -87,8 +89,8 @@ if __name__ == "__main__":
                     "level_of_theory" : args.method , "mem" : args.mem, "nproc" : args.nproc,
                     "maxcyc" : args.maxcyc, "maxconv" : args.maxconv, "cm" : args.cm ,
                     "startchk" : args.startchk, "cycles" : args.cycles, 
-                    "reverse" : None, "restart" : args.restart, "modredundant" : None, "symm_stretch" : args.symm_stretch, 
-                    "dp" : args.dp, "fragment" : args.fragment, "max_error_cycles"  : 5, 
+                    "reverse" : args.reverse, "restart" : args.restart, "modredundant" : None, "symm_stretch" : args.symm_stretch, 
+                    "dp" : args.dp, "fragment" : args.fragment, "max_error_cycles"  : 5, "mulliken_h" : args.mulliken_h,
                     "trajectory" : args.trajectory, "checkpoint" : args.checkpoint,
                     "oniomtemplate" : args.oniom, "ambertemplate" : args.amber, "oniomopt" : args.oniomopt,
                      "constraint" : args.constraint }
