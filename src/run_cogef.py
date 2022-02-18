@@ -13,7 +13,7 @@ import csv
 import json
 import argparse
 
-import cogef
+from cogef import fragments
 from cogef import cogef_logging
 from cogef import driver as driver
 from cogef._version import __version__ 
@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', action='version',version='%(prog)s {version}'.format(version=__version__))
-    parser.add_argument("-at", required=True, help="atom1 atom2 starting at 1", type=str)
+    parser.add_argument("-at", required=True, help="atom1 atom2 starting at 1 as list eg. '1,2'", type=str)
     
     group_molecule = parser.add_argument_group("molecule definition")
     group_molecule.add_argument("-xyz", required=True, help="xyz file",type=argparse.FileType('r'))
@@ -54,7 +54,7 @@ if __name__ == "__main__":
             choices=["restricted","unrestricted"], type=str, default="restricted")
     group_tweaks.add_argument("-dx", help="increment", default=0.02,type=float)
     group_tweaks.add_argument("-dp", help="add perturbation for fragment atoms", default=1.0,type=float)
-    group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1 as string, e.g. '1 2 3 4'",type=str, default="")
+    group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1 as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
     group_tweaks.add_argument("-cycles", help="number n of cycles to run", type=int, default=1)
     group_tweaks.add_argument("-restart", help="restart from cylce n. needs guess.chk and checkpoint.xyz", type=int, default=1)
     group_tweaks.add_argument("-reverse", help="reverse from cylce n. needs guess.chk and start geometry as .xyz", type=int, default=None)
@@ -71,7 +71,8 @@ if __name__ == "__main__":
     group_logging.add_argument("-stream_level", help="set the streaming level", choices=["DEBUG","INFO"], default="INFO")
 
     args = parser.parse_args()
-    atom1 ,atom2 = [ int(x)-1 for x in args.at.split() ]
+    atom1 ,atom2 = [ int(x)-1 for x in args.at.split(",") ]
+    args.fragment = fragments.convert_inputstr(args.fragment)
 
     # START LOGGING HERE
     # this way no logs are created for e.g. -h or --version 
@@ -83,7 +84,7 @@ if __name__ == "__main__":
     for arg,value in (vars(args)).items():
         logger.info("    -{:10s} : {}".format(arg,value))
 
-    args.fragment = [ int(x) - 1 for x in args.fragment.split() ]
+    
 
     driver_args = { "xyz" : args.xyz, "runtype" : args.runtype, "atom1" : atom1 , "atom2" : atom2, "dx" : args.dx, 
                     "level_of_theory" : args.method , "mem" : args.mem, "nproc" : args.nproc,
