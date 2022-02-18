@@ -426,37 +426,3 @@ class CheckAmberLogfile(CheckGaussianLogfile):
         if self._find_scf_energy.search(line):
             temp = line.split()
             self.scf_energy = temp[0] + " = " + temp[1]
-
-#the following functions are kept for backwards compatibility and will
-#be removed in future versions
-def read_instability_from_log(filename):
-    instab=False
-    with open(filename,"r") as of:
-        while True:
-            line = of.readline()
-            if not line: break 
-            if "The wavefunction has an internal instability." in line:
-                instab = True
-    return(instab)
-
-def read_stationary_from_log(filename):
-    stationary=False
-    with open(filename,"r") as of:
-        while True:
-            line = of.readline()
-            if not line: break 
-            if "-- Stationary point found." in line:
-                stationary = True
-    return(stationary)
-
-def check_normal_termination_from_log(filename):
-    last_line = ""
-    error = True
-    with open(filename,"r") as of:
-        while True:
-            line = of.readline()
-            if not line: break
-            else: last_line = line
-    if "Normal termination" in last_line:
-        error = False
-    return error
