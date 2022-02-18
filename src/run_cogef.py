@@ -43,6 +43,8 @@ if __name__ == "__main__":
     group_gaussian.add_argument("-startchk", help="use initial guess from guess.chk", action="store_true", default=False)
     group_gaussian.add_argument("-maxcyc", help="Sets the maximum number of optimization steps to N", type=int, default=50)
     group_gaussian.add_argument("-maxconv", help="Sets the maximum number conventional SCF cycles", type=int, default=75)
+    group_gaussian.add_argument("-modredundant", help="add additional modredundant sections separated by ',' eg. '1 2 F, 2 3 F'", 
+        type=str, default="")
 
     group_output = parser.add_argument_group("Output options")
     group_output.add_argument("-trajectory", help="write trajectory to file", type=argparse.FileType("a"), default=None)
@@ -68,15 +70,15 @@ if __name__ == "__main__":
     group_logging = parser.add_argument_group("logging")
     group_logging.add_argument("-logfile", help="name of the logfile", type=str, default="job_cogef.log")
     group_logging.add_argument("-log_level", help="set the log level", choices=["DEBUG","INFO"], default="INFO")
-    group_logging.add_argument("-stream_level", help="set the streaming level", choices=["DEBUG","INFO"], default="INFO")
 
     args = parser.parse_args()
     atom1 ,atom2 = [ int(x)-1 for x in args.at.split(",") ]
     args.fragment = fragments.convert_inputstr(args.fragment)
+    args.modredundant = [ x.strip() for x in args.modredundant.split(",") ]
 
     # START LOGGING HERE
     # this way no logs are created for e.g. -h or --version 
-    cogef_logging.logging_init(log_file=args.logfile, log_level = args.log_level, stream_level = args.stream_level)
+    cogef_logging.logging_init(log_file=args.logfile, log_level = args.log_level, stream_level = args.log_level)
     logger = logging.getLogger("run_cogef")
     logger.info("Starting Cogef calculation .... " )
     logger.info("Version: {}".format(__version__))
@@ -84,17 +86,15 @@ if __name__ == "__main__":
     for arg,value in (vars(args)).items():
         logger.info("    -{:10s} : {}".format(arg,value))
 
-    
-
     driver_args = { "xyz" : args.xyz, "runtype" : args.runtype, "atom1" : atom1 , "atom2" : atom2, "dx" : args.dx, 
                     "level_of_theory" : args.method , "mem" : args.mem, "nproc" : args.nproc,
                     "maxcyc" : args.maxcyc, "maxconv" : args.maxconv, "cm" : args.cm ,
                     "startchk" : args.startchk, "cycles" : args.cycles, 
-                    "reverse" : args.reverse, "restart" : args.restart, "modredundant" : None, "symm_stretch" : args.symm_stretch, 
-                    "dp" : args.dp, "fragment" : args.fragment, "max_error_cycles"  : 5, "mulliken_h" : args.mulliken_h,
-                    "trajectory" : args.trajectory, "checkpoint" : args.checkpoint,
-                    "oniomtemplate" : args.oniom, "ambertemplate" : args.amber, "oniomopt" : args.oniomopt,
-                     "constraint" : args.constraint }
+                    "reverse" : args.reverse, "restart" : args.restart, "modredundant" : args.modredundant, 
+                    "symm_stretch" : args.symm_stretch, "dp" : args.dp, "fragment" : args.fragment,
+                    "max_error_cycles"  : 5, "mulliken_h" : args.mulliken_h, "trajectory" : args.trajectory,
+                     "checkpoint" : args.checkpoint, "oniomtemplate" : args.oniom, "ambertemplate" : args.amber,
+                     "oniomopt" : args.oniomopt, "constraint" : args.constraint }
     if args.oniom:
         data = driver.oniom_cogef_loop(**driver_args)
     elif args.amber:

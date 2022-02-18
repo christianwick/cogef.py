@@ -12,7 +12,6 @@ import subprocess
 
 from cogef.constants import PSE
 from cogef import gaussian
-from cogef.fragments import classFragment
 from cogef import modstruct
 from cogef import cogef_logging
 
@@ -102,7 +101,7 @@ class cogef_loop():
         self.modredundant = ["{} {} F".format(atom1 + 1, atom2 + 1 )]
         self.symm_stretch= symm_stretch
         self.dp = dp
-        self.fragment = classFragment(fragment).fragment
+        self.fragment = fragment
         self.max_error_cycles = max_error_cycles
         self.glog = gaussian.CheckGaussianLogfile()
         self.ginp = gaussian.GaussianInput(mem=mem, nproc = nproc, charge_multi = cm)
