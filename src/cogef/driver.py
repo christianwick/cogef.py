@@ -34,7 +34,7 @@ class cogef_loop():
                     maxcyc = None, maxconv = 75, startchk = False, cm = "0 1",
                     cycles = 1, reverse = None, restart = 0, modredundant=None, symm_stretch=True, 
                     dp=1.0, fragment=[], max_error_cycles = 5, mulliken_h = False,
-                    trajectory = None, checkpoint = None , **kwargs):
+                    trajectory = None, checkpoint = None , no_mix = False, **kwargs):
         """
         initalise all important parameters
 
@@ -84,6 +84,9 @@ class cogef_loop():
                     trajectory : of,None
                     checkpoint : of,None
                         write trajectory / checkpoint file if points to an open file
+                    no_mix : Bool
+                        If False, allow mixing of initial HOMO,LUMO orbitals, 
+                        if True, turn of mixing completely.
 
         internal Parameters:
                     self.check_stability : boolean   
@@ -91,6 +94,8 @@ class cogef_loop():
                     self.check_stationary : boolean
                         check for stability / error termination / stationary 
                             point if True
+                    self.allow_mixing : Bool
+                        is the opposite of no_mix. Eg. if no_mix = True, allow_mixing = False
         
         """
         self.level_of_theory = level_of_theory.strip()
@@ -109,6 +114,7 @@ class cogef_loop():
         self.maxcyc = maxcyc
         self.maxconv = maxconv
         self.mulliken_h = mulliken_h
+        self.allow_mixing = not no_mix
         if xyz:
             self.ginp.molecule.read_xyz(xyz)
         self.trajectory = trajectory
@@ -159,15 +165,17 @@ class cogef_loop():
         """
         # start the outer cogef loop
         read_guess = False
+        mix_guess = False
         for cycle in self.loop_range:
             logger.info("Starting cycle {} out of a maximum of {}".format(cycle,max(self.loop_range)))
             basename = "cogef_{:03d}".format(int(cycle))
             glog_filename = basename + ".log"
             ginp_filename = basename + ".com"   
-            mix_guess = True     
+            if self.allow_mixing: mix_guess = True   
             error_cycle = 0
             # start the inner loop 
             while error_cycle < self.max_error_cycles:
+                logger.info("Starting iteration {} of {} on cycle {}".format(error_cycle,self.max_error_cycles,cycle))
                 # write the gaussian input file. the actual function will be set at init
                 # read_guess = True will read the guess from the chk file. 
                 # mix_guess = True will mix the input HOMO and LUMO orbitals.  

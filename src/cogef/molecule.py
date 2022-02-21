@@ -313,7 +313,8 @@ class OniomMolecule(Molecule):
         self.medium_layer_idx = [ x for x,l in enumerate(self.layer) if l == "M" ]
         self.low_layer_idx = [ x for x,l in enumerate(self.layer) if l == "L" ]
         self.active_atoms_idx = [ x for x,l in enumerate(self.opt_flags) if l == 0 ]
-        logger.debug("Finished reading coordinates.")
+        logger.debug("Finished reading ONIOM Template.")
+        logger.debug("ONIOM template: \n" + str(self))
 
     def _read_molecule_spec(self,line):
         element = ""
@@ -341,7 +342,7 @@ class OniomMolecule(Molecule):
             filename = filename.name
         self.write_layer_xyz(filename + "_high.xyz", comment=comment, write_mode=write_mode, symbol="H")
         self.write_layer_xyz(filename + "_medium.xyz", comment=comment, write_mode=write_mode, symbol="M")
-        self.write_layer_xyz(filename + "_low.xyz", comment=comment, write_mode=write_mode, symbol="L")
+        #self.write_layer_xyz(filename + "_low.xyz", comment=comment, write_mode=write_mode, symbol="L")
 
     def write_layer_xyz(self,filename, comment="", write_mode="w", symbol="H"):
         mol = Molecule()

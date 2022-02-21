@@ -13,7 +13,7 @@ import csv
 import json
 import argparse
 
-from cogef import fragments
+from cogef import misc
 from cogef import cogef_logging
 from cogef import driver as driver
 from cogef._version import __version__ 
@@ -60,11 +60,14 @@ if __name__ == "__main__":
     group_tweaks.add_argument("-cycles", help="number n of cycles to run", type=int, default=1)
     group_tweaks.add_argument("-restart", help="restart from cylce n. needs guess.chk and checkpoint.xyz", type=int, default=1)
     group_tweaks.add_argument("-reverse", help="reverse from cylce n. needs guess.chk and start geometry as .xyz", type=int, default=None)
+    group_tweaks.add_argument("-max_error_cycles", help="number n of error cycles to run", type=int, default=5)
     group_tweaks.add_argument("-symm_stretch", 
         help ="perform symmetric stretch moving both atoms (framgents). asymmetric otherwise.", action="store_true",
         default = False)
     group_tweaks.add_argument("-mulliken_h", 
         help ="use mulliken charges with Hydrogens summed into heavy atoms. Otherwise use standard mulliken charges",
+        action="store_true", default = False)
+    group_tweaks.add_argument("-no_mix", help ="Turn of mixing of HOMO LUMO orbitals completely.",
         action="store_true", default = False)
     
     group_logging = parser.add_argument_group("logging")
@@ -73,8 +76,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     atom1 ,atom2 = [ int(x)-1 for x in args.at.split(",") ]
-    args.fragment = fragments.convert_inputstr(args.fragment)
-    args.modredundant = [ x.strip() for x in args.modredundant.split(",") ]
+    args.fragment = misc.convert_inputstr(args.fragment)
+    args.modredundant = misc.convert_modredundant(args.modredundant) 
 
     # START LOGGING HERE
     # this way no logs are created for e.g. -h or --version 
@@ -92,14 +95,17 @@ if __name__ == "__main__":
                     "startchk" : args.startchk, "cycles" : args.cycles, 
                     "reverse" : args.reverse, "restart" : args.restart, "modredundant" : args.modredundant, 
                     "symm_stretch" : args.symm_stretch, "dp" : args.dp, "fragment" : args.fragment,
-                    "max_error_cycles"  : 5, "mulliken_h" : args.mulliken_h, "trajectory" : args.trajectory,
+                    "max_error_cycles"  : args.max_error_cycles, "mulliken_h" : args.mulliken_h, "trajectory" : args.trajectory,
                      "checkpoint" : args.checkpoint, "oniomtemplate" : args.oniom, "ambertemplate" : args.amber,
-                     "oniomopt" : args.oniomopt, "constraint" : args.constraint }
+                     "oniomopt" : args.oniomopt, "constraint" : args.constraint , "no_mix" : args.no_mix }
     if args.oniom:
+        logger.debug("Starting ONIOM driver")
         data = driver.oniom_cogef_loop(**driver_args)
     elif args.amber:
+        logger.debug("Starting AMBER driver")
         data = driver.amber_cogef_loop(**driver_args)
     else:
+        logger.debug("Starting driver")
         data = driver.cogef_loop(**driver_args)
     data.run()
     
