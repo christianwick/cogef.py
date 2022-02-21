@@ -25,12 +25,10 @@ from cogef._version import __version__
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-xyztrj", required=True, help="xyz trajectory file", type=argparse.FileType('r'))
-    parser.add_argument("-charge",help="list of charges",type=int, nargs="+", default=[0])
-    parser.add_argument("-multiplicity",help="list of multiplicities",type=int, nargs="+", default=[1])
+    parser.add_argument("-cm",help="charge/multiplicity line e.g '0,1'",type=str, default="0 1")
     parser.add_argument("-nproc", help="nproc", type=str, default="12")
     parser.add_argument("-mem", help="memory", type=str, default="12GB")
     parser.add_argument("-method", help="UwB97XD/def2TZVPP", type=str, default=None)
-    parser.add_argument("-dispersion", help="GD3/GD3BJ/GD3", type=str, choices=["GD3","GD3BJ"], default=None)
 
     group_logging = parser.add_argument_group("logging")
     group_logging.add_argument("-log_level", help="set the log level", choices=["DEBUG","INFO"], default="INFO")
@@ -47,20 +45,20 @@ if __name__ == "__main__":
     logger.info("Command line Arguments: ")
     for arg,value in (vars(args)).items():
         logger.info("    -{:10s} : {}".format(arg,value))
-
-    data = gaussian.GaussianInput(mem=args.mem, nproc=args.nproc, charge=args.charge, multiplicity=args.multiplicity)
-    if args.method:
-        data.route["level_of_theory"] = args.method 
-    if args.dispersion:
-        data.route["empiricalDispersion"] = args.dispersion
-
+    # start calculation    
+    ginp = gaussian.GaussianInput(mem=args.mem, nproc=args.nproc, charge_multi = args.cm )
+    route = gaussian.classGaussianRoute()
+    route.route = ["#P", args.method.strip()]
     xyztrj = molecule.Molecule.read_xyz_trj(args.xyztrj)
     for nn,xyz in enumerate(xyztrj):
-        filename = "sp_{:03d}".format(nn)
-        data.molecule.read_xyz(xyz)
+        filename = "sp_{:03d}".format(nn+1)
+        ginp.molecule.read_xyz(xyz)
         with open(filename+".com", "w") as of:
-            data.write_sp_input(of)
+            logger.info(f"Starting cycle {nn}")
+            ginp.of = of
+            ginp.write_inputfile(link1=False, route=route, geom=True, modredundant=None)
         rungauss = subprocess.run(["cogef_rung16",filename + ".com"], check=True, capture_output=True, text=True)
+        logger.info(f"Finished gaussian sp calculation at cycle {nn}")
 
     # STOP LOGGING HERE
     logger.info("Finished gaussian single point calculations. " )
