@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.7.0 Cogef.py 21.2.22
+### changed
+- complete rewrite of gaussian classes.
+- complete rewrite of the cogef driver
+- changed guess(mix,always) to (read,mix)
+- changed error handling
+- new universal cogef script: run_cogef.py
+
+### added
+- restricted / unrestricted formalism
+- mixing of orbitals can be turned of now
+- ONIOM / AMBER calculations can switch constraints (modredundant,opt_flags)
+- DEV: increased readability of code
+
+
 ## 1.6.0 Cogef.py 24.01.22
 ### added
 - added ONIOM and AMBER cogef functionality
