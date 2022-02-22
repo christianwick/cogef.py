@@ -52,8 +52,8 @@ if __name__ == "__main__":
             type=str, default="checkpoint.xyz")
 
     group_tweaks = parser.add_argument_group("cogef")
-    group_tweaks.add_argument("-runtype", help="restricted/unrestricted cogef", 
-            choices=["restricted","unrestricted"], type=str, default="restricted")
+    group_tweaks.add_argument("-runtype", help="restricted/unrestricted/TS cogef", 
+            choices=["restricted","unrestricted","TS"], type=str, default="restricted")
     group_tweaks.add_argument("-dx", help="increment", default=0.02,type=float)
     group_tweaks.add_argument("-dp", help="add perturbation for fragment atoms", default=1.0,type=float)
     group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1 as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")

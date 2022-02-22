@@ -205,6 +205,7 @@ class CheckGaussianLogfile():
         self._find_struct = re.compile("Input orientation")
         self._find_mulliken = re.compile("Mulliken charges and spin densities:")
         self._find_mulliken_h = re.compile("Mulliken charges and spin densities with hydrogens summed into heavy atoms:")
+        self._find_frequencies = re.compile("Frequencies --")
 
         self.filename = filename
         self.instability = False
@@ -216,6 +217,7 @@ class CheckGaussianLogfile():
         self.scf_energy = 0.0
         self.molecule = Molecule()
         self.mulliken = Mulliken()
+        self.imag_frequencies = []
     
     def read_log(self, mulliken_h = False):
         """
@@ -233,6 +235,7 @@ class CheckGaussianLogfile():
             self.spin
             self.scf_energy
             self.found_broken_bond
+            self.imag_frequencies 
         
         """
         self.instability = False
@@ -240,6 +243,7 @@ class CheckGaussianLogfile():
         self.error = False
         self.spin = 0.0
         self.scf_energy = 0.0
+        self.imag_frequencies = []
         
         last_line = ""
         logger.debug(f"Reading gaussian log file {self.filename}")
@@ -257,6 +261,7 @@ class CheckGaussianLogfile():
                 self._read_struct(line, of)
                 if mulliken_h: self._read_mulliken_h(line, of)
                 else: self._read_mulliken(line, of)
+                self._read_frequencies(line)
                 last_line = line
             # we check only the last line for error terminations:
             self._check_termination(last_line)
@@ -291,6 +296,13 @@ class CheckGaussianLogfile():
         #elif self._find_stable.search(line):
         #    logger.debug(f"Detected a stable Wavefunction in file {self.filename}")
         #    self.instability = False
+
+    def _read_frequencies(self,line):
+        if self._find_frequencies.search(line):
+            for val in line.split()[2:]:
+                if float(val) < 0. : 
+                    logger.info(f"Found imag freq: {val}")
+                    self.imag_frequencies.append(float(val))
 
     def _read_stationary(self,line):
         if self._find_stationary.search(line):

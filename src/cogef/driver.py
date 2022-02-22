@@ -92,6 +92,7 @@ class cogef_loop():
                     self.check_stability : boolean   
                     self.check_error : boolean
                     self.check_stationary : boolean
+                    self.check_imag_freq: boolean
                         check for stability / error termination / stationary 
                             point if True
                     self.allow_mixing : Bool
@@ -124,13 +125,23 @@ class cogef_loop():
             self.check_error = True
             self.check_stationary = True
             self.check_stability = False
+            self.check_imag_freq = False
             self.mix_guess = False
         elif runtype == "unrestricted":
             self.write_ginp = self._write_ginp_unrestricted # here we are not calling the function!
             self.check_error = True
             self.check_stationary = True
             self.check_stability = True
+            self.check_imag_freq = False
             self.mix_guess = True
+        elif runtype == "TS":
+            self.write_ginp = self._write_ginp_ts # here we are not calling the function!
+            self.check_error = True
+            self.check_stationary = True
+            self.check_stability = True
+            self.check_imag_freq = True
+            self.mix_guess = True
+        
         if modredundant:
             self.modredundant.extend(modredundant)
         # loop_range for cogef main loop
@@ -258,6 +269,29 @@ class cogef_loop():
             route.guess = ["read"]
             route.geom = ["allcheck"]
             self.ginp.write_inputfile(link1=True,route=route,geom=False)
+    
+    def _write_ginp_ts(self, ginp_filename="", read_guess=False, **kwargs):
+        """
+        generate input file for restricted cogef calculations. This will NOT CHECK the stability of the 
+        wfn at each cycle.
+
+        Paramter: 
+                ginp_filename : str
+                        filename of the ginp file that should be generated.
+                read_guess : boolean
+                        if True, use the previous wfn as guess.
+        """
+        logger.info(f"setting chk point file to {'guess.chk'}")
+        self.ginp.link0.chk="guess.chk"    
+        with open(ginp_filename, "w") as of:
+            self.ginp.of = of
+            # JOB 1 geometry optimisation
+            route = gaussian.classGaussianRoute()
+            route.route = [self.print_level, self.level_of_theory , "nosymm", "test", "FREQ"] 
+            route.opt = ["TS","CALCFC","modredundant", "RFO"]
+            if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
+            if read_guess: route.guess = ["read"]
+            self.ginp.write_inputfile(link1=False,route=route,geom=True,modredundant=self.modredundant)
 
     def check_gaussian_logfile(self,filename,cycle,error_cycle):
         """
@@ -289,6 +323,9 @@ class cogef_loop():
         if self.check_stationary and not self.glog.stationary:
             logger.warning("No stationary point found at cycle {} {}".format(cycle,error_cycle ))
             glog_is_ok = False 
+        if self.check_imag_freq and len(self.glog.imag_frequencies) != 1:
+            logger.warning("NImag differs from one at cylce {} {}".format(cycle,error_cycle ))
+            glog_is_ok =False
         return ( self.glog.molecule.coordinates, glog_is_ok )
                          
 
@@ -555,6 +592,8 @@ class oniom_cogef_loop(cogef_loop):
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 if self.constraint == "modredundant": route.opt.append("modredundant")
                 if read_guess: route.guess.append("read")
+                self.ginp.write_inputfile(link1=False,route=route, geom=True, connectivity=True, 
+                        modredundant=self.modredundant,parm=True)
                 # JOB 2 oniom ee stable=opt
                 route = gaussian.classGaussianRoute()
                 route.route = [self.print_level, self.level_of_theory + "=EMBEDCHARGE", "nosymm", "stable=opt", "test"]
@@ -580,6 +619,8 @@ class oniom_cogef_loop(cogef_loop):
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 if self.constraint == "modredundant": route.opt.append("modredundant")
                 if read_guess: route.guess.append("read")
+                self.ginp.write_inputfile(link1=False,route=route, geom=True, connectivity=True, 
+                        modredundant=self.modredundant,parm=True)
                 # JOB 2 oniom ee stable=opt
                 route = gaussian.classGaussianRoute()
                 route.route = [self.print_level, self.level_of_theory, "nosymm", "stable=opt", "test"]
