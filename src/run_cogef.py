@@ -34,6 +34,7 @@ if __name__ == "__main__":
     group_oniom.add_argument("-oniomopt", help="oniom opt method: hybrid,me or ee_sp",choices=["hybrid","me","ee","ee_sp"],type=str)
     group_oniom.add_argument("-constraint", help="oniom constraints: modredundant or opt_flag",
             choices=["modredundant","opt_flag"], type=str, default="modredundant")
+    group_oniom.add_argument("-no_micro", help="do not use microiterations in ONIOM", action="store_true", default=False)
 
 
     group_gaussian = parser.add_argument_group("Gaussian options")
@@ -52,8 +53,8 @@ if __name__ == "__main__":
             type=str, default="checkpoint.xyz")
 
     group_tweaks = parser.add_argument_group("cogef")
-    group_tweaks.add_argument("-runtype", help="restricted/unrestricted cogef", 
-            choices=["restricted","unrestricted"], type=str, default="restricted")
+    group_tweaks.add_argument("-runtype", help="restricted/unrestricted/TS cogef", 
+            choices=["restricted","unrestricted","TS"], type=str, default="restricted")
     group_tweaks.add_argument("-dx", help="increment", default=0.02,type=float)
     group_tweaks.add_argument("-dp", help="add perturbation for fragment atoms", default=1.0,type=float)
     group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1 as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
@@ -96,8 +97,9 @@ if __name__ == "__main__":
                     "reverse" : args.reverse, "restart" : args.restart, "modredundant" : args.modredundant, 
                     "symm_stretch" : args.symm_stretch, "dp" : args.dp, "fragment" : args.fragment,
                     "max_error_cycles"  : args.max_error_cycles, "mulliken_h" : args.mulliken_h, "trajectory" : args.trajectory,
-                     "checkpoint" : args.checkpoint, "oniomtemplate" : args.oniom, "ambertemplate" : args.amber,
-                     "oniomopt" : args.oniomopt, "constraint" : args.constraint , "no_mix" : args.no_mix }
+                    "checkpoint" : args.checkpoint, "oniomtemplate" : args.oniom, "ambertemplate" : args.amber,
+                    "oniomopt" : args.oniomopt, "constraint" : args.constraint ,
+                    "no_mix" : args.no_mix, "no_micro" : args.no_micro }
     if args.oniom:
         logger.debug("Starting ONIOM driver")
         data = driver.oniom_cogef_loop(**driver_args)
