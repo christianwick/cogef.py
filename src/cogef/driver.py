@@ -266,7 +266,7 @@ class cogef_loop():
             route = gaussian.classGaussianRoute()
             route.route = [self.print_level, self.level_of_theory , "nosymm", "stable=opt", "test"]
             route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
-            route.guess = ["read"]
+            route.guess = ["TCheck"]
             route.geom = ["allcheck"]
             self.ginp.write_inputfile(link1=True,route=route,geom=False)
     
@@ -433,7 +433,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.route = [self.print_level, self.level_of_theory+"=EMBEDCHARGE", "nosymm", "test"] 
                 route.geom = ["allcheck"]
                 route.iop = ["2/15=3"]
-                route.guess = ["read"]
+                route.guess = ["TCheck"]
                 if self.allow_micro: route.opt = ["Quadmac"]
                 else: route.opt = ["NoMicro"]
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
@@ -462,7 +462,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.route = [self.print_level, self.level_of_theory+"=EMBEDCHARGE", "nosymm", "test"] 
                 route.iop = ["2/15=3"]
                 route.geom = ["allcheck"]
-                route.guess = ["read"]
+                route.guess = ["TCheck"]
                 self.ginp.write_inputfile(link1=True,route=route, geom=False, connectivity=False, 
                         modredundant=self.modredundant,parm=False)
         # ---------
@@ -551,7 +551,7 @@ class oniom_cogef_loop(cogef_loop):
                 if self.allow_micro: route.opt = ["Quadmac"]
                 else: route.opt = ["NoMicro"]
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
-                route.guess.append("read")
+                route.guess.append("TCheck")
                 if self.constraint == "modredundant": route.opt.append("modredundant")
                 self.ginp.write_inputfile(link1=True,route=route, geom=False, connectivity=False, 
                         modredundant=self.modredundant,parm=False)
@@ -561,7 +561,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["allcheck"]
                 route.iop = ["2/15=3"]
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
-                route.guess = ["read"]
+                route.guess = ["TCheck"]
                 self.ginp.write_inputfile(link1=True,route=route, geom=False, connectivity=False, 
                         modredundant=self.modredundant,parm=False)
         # ------------
@@ -589,7 +589,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["allcheck"]
                 route.iop = ["2/15=3"]
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
-                route.guess = ["read"]
+                route.guess = ["TCheck"]
                 self.ginp.write_inputfile(link1=True,route=route, geom=False, connectivity=False, 
                         modredundant=self.modredundant,parm=False)
         # ---------
@@ -617,7 +617,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["allcheck"]
                 route.iop = ["2/15=3"]
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
-                route.guess = ["read"]
+                route.guess = ["TCheck"]
                 self.ginp.write_inputfile(link1=True,route=route, geom=False, connectivity=False, 
                         modredundant=self.modredundant,parm=False)
         # ---------
@@ -645,7 +645,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["allcheck"]
                 route.iop = ["2/15=3"]
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
-                route.guess = ["read"]
+                route.guess = ["TCheck"]
                 self.ginp.write_inputfile(link1=True,route=route, geom=False, connectivity=False, 
                         modredundant=self.modredundant,parm=False)
     
