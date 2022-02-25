@@ -35,6 +35,8 @@ if __name__ == "__main__":
     group_oniom.add_argument("-constraint", help="oniom constraints: modredundant or opt_flag",
             choices=["modredundant","opt_flag"], type=str, default="modredundant")
     group_oniom.add_argument("-no_micro", help="do not use microiterations in ONIOM", action="store_true", default=False)
+    group_oniom.add_argument("-quadmac", help="do use the QuadMac option during microiterations in ONIOM",
+        action="store_true", default=False)
 
 
     group_gaussian = parser.add_argument_group("Gaussian options")
@@ -99,7 +101,7 @@ if __name__ == "__main__":
                     "max_error_cycles"  : args.max_error_cycles, "mulliken_h" : args.mulliken_h, "trajectory" : args.trajectory,
                     "checkpoint" : args.checkpoint, "oniomtemplate" : args.oniom, "ambertemplate" : args.amber,
                     "oniomopt" : args.oniomopt, "constraint" : args.constraint ,
-                    "no_mix" : args.no_mix, "no_micro" : args.no_micro }
+                    "no_mix" : args.no_mix, "no_micro" : args.no_micro, "quadmac" : args.quadmac }
     if args.oniom:
         logger.debug("Starting ONIOM driver")
         data = driver.oniom_cogef_loop(**driver_args)

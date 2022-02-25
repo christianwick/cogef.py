@@ -332,7 +332,7 @@ class cogef_loop():
 
     @staticmethod
     def run_gauss(ginp_filename):
-        rungauss = subprocess.run(["cogef_rung16",ginp_filename], check=True, capture_output=True, text=True)
+        rungauss = subprocess.run(["cogef_rung16",ginp_filename])
         
 
 
@@ -350,14 +350,13 @@ class oniom_cogef_loop(cogef_loop):
             select method used to constrain atoms in the cogef calculation. 
         no_micro : Bool
             if False, do micro iterations, if True, no micro iterations in ONIOM
-    
-    Internal Parameters:
-        allow_micro : Bool
-            not no_micro
+        quadmac : Bool
+            if True, turn on QuadMac during optimisations.
+
 
     """
     def __init__(self, oniomtemplate, oniomopt="hybrid", constraint="modredundant", no_micro=False,
-                 xyz=None, **kwargs):
+                 quadmac = True, xyz=None, **kwargs):
         super().__init__(**kwargs)
         self.oniomopt = oniomopt 
         self.constraint = constraint
@@ -365,7 +364,8 @@ class oniom_cogef_loop(cogef_loop):
         self.ginp = gaussian.OniomInput(mem=self.ginp.link0.mem, nproc = self.ginp.link0.nproc,
              charge_multi = self.ginp.molecule.charge_multi)
         self.ginp.molecule.read_oniom_template(oniomtemplate)
-        self.allow_micro = not no_micro
+        self.no_micro = no_micro
+        self.quadmac = quadmac
 
         if xyz:
             self.ginp.molecule.read_xyz(xyz)
@@ -421,8 +421,9 @@ class oniom_cogef_loop(cogef_loop):
                 route.route = [self.print_level, self.level_of_theory, "nosymm","test"] 
                 route.geom = ["connect"]
                 route.iop = ["2/15=3"]
-                if self.allow_micro: route.opt = ["Mic120","Quadmac"]
-                else: route.opt = ["NoMicro"]
+                if self.no_micro: route.opt = ["NoMicro"]
+                else: route.opt = ["Mic120"]
+                if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc)) # if 0, no optimisation!
                 if self.constraint == "modredundant": route.opt.append("modredundant")
                 if read_guess: route.guess =  ["read"]
@@ -434,8 +435,8 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["allcheck"]
                 route.iop = ["2/15=3"]
                 route.guess = ["TCheck"]
-                if self.allow_micro: route.opt = ["Quadmac"]
-                else: route.opt = ["NoMicro"]
+                if self.no_micro: route.opt = ["NoMicro"]
+                if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
                 if self.constraint == "modredundant": route.opt.append("modredundant")
                 self.ginp.write_inputfile(link1=True,route=route, geom=False, connectivity=False, 
@@ -450,8 +451,9 @@ class oniom_cogef_loop(cogef_loop):
                 route.route = [self.print_level, self.level_of_theory, "nosymm","test"] 
                 route.geom = ["connect"]
                 route.iop = ["2/15=3"]
-                if self.allow_micro: route.opt = ["Mic120","Quadmac"]
-                else: route.opt = ["NoMicro"]
+                if self.no_micro: route.opt = ["NoMicro"]
+                else: route.opt = ["Mic120"]
+                if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
                 if self.constraint == "modredundant": route.opt.append("modredundant")
                 if read_guess: route.guess =  ["read"]
@@ -475,8 +477,8 @@ class oniom_cogef_loop(cogef_loop):
                 route.route = [self.print_level, self.level_of_theory+"=EMBEDCHARGE", "nosymm", "test"] 
                 route.iop = ["2/15=3"]
                 route.geom = ["connect"]
-                if self.allow_micro: route.opt = ["Quadmac"]
-                else: route.opt = ["NoMicro"]
+                if self.no_micro: route.opt = ["NoMicro"]
+                else: route.opt = ["Quadmac"]
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
                 if self.constraint == "modredundant": route.opt.append("modredundant")
                 if read_guess: route.guess =  ["read"]
@@ -492,8 +494,9 @@ class oniom_cogef_loop(cogef_loop):
                 route.route = [self.print_level, self.level_of_theory, "nosymm", "test"] 
                 route.iop = ["2/15=3"]
                 route.geom = ["connect"]
-                if self.allow_micro: route.opt = ["Mic120", "Quadmac"]
-                else: route.opt = ["NoMicro"]
+                if self.no_micro: route.opt = ["NoMicro"]
+                else: route.opt = ["Mic120"]
+                if self.quadmac: route.opt.append("QuadMac")
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
                 if self.constraint == "modredundant": route.opt.append("modredundant")
                 if read_guess: route.guess =  ["read"]
@@ -534,8 +537,9 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["connect"]
                 route.iop = ["2/15=3"]
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
-                if self.allow_micro: route.opt = ["Mic120","Quadmac"]
-                else: route.opt = ["NoMicro"]
+                if self.no_micro: route.opt = ["NoMicro"]
+                else: route.opt = ["Mic120"]
+                if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 if mix_guess: route.guess.append("mix")
                 if self.constraint == "modredundant": route.opt.append("modredundant")
@@ -548,8 +552,8 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["allcheck"]
                 route.iop = ["2/15=3"]
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
-                if self.allow_micro: route.opt = ["Quadmac"]
-                else: route.opt = ["NoMicro"]
+                if self.no_micro: route.opt = ["NoMicro"]
+                if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 route.guess.append("TCheck")
                 if self.constraint == "modredundant": route.opt.append("modredundant")
@@ -575,8 +579,9 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["connect"]
                 route.iop = ["2/15=3"]
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
-                if self.allow_micro: route.opt = ["Mic120","Quadmac"]
-                else: route.opt = ["NoMicro"]
+                if self.no_micro: ["NoMicro"]
+                else: route.opt = ["Mic120"]
+                if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 if mix_guess: route.guess.append("mix")
                 if self.constraint == "modredundant": route.opt.append("modredundant")
@@ -603,8 +608,8 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["connect"]
                 route.iop = ["2/15=3"]
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
-                if self.allow_micro: route.opt = ["Quadmac"]
-                else: route.opt = ["NoMicro"]
+                if self.no_micro: route.opt =  ["NoMicro"]
+                if self.quadmac: route.opt.append("QuadMac")
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 if mix_guess: route.guess.append("mix")
                 if self.constraint == "modredundant": route.opt.append("modredundant")
@@ -631,8 +636,9 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["connect"]
                 route.iop = ["2/15=3"]
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
-                if self.allow_micro: route.opt = ["Mic120","Quadmac"]
-                else: route.opt = ["NoMicro"]
+                if self.no_micro: route.opt = ["NoMicro"]
+                else: route.opt = ["Mic120"]
+                if self.quadmac: route.opt.append("QuadMac")
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 if mix_guess: route.guess.append("mix")
                 if self.constraint == "modredundant": route.opt.append("modredundant")
