@@ -161,8 +161,13 @@ class analyse_cogef():
         self.rel_distances_label = ["rel " + str(x) for x in self.distances_label]
 
     def _compute_strain(self):
+        """ engineering strain
+        e = ( l - L ) / L 
+            e : engineering strain, l current distance, L initial distance
+        """
         self.strain = []
-        self.strain = self.rel_distances / self.distances
+        l_zero = self.distances[0,:]
+        self.strain = (self.distances - l_zero ) / l_zero
         self.strain_label = ["strain " + str(x)[:-6] for x in self.distances_label]
         
     def _filter_data_by_energy(self,cut_off_en=400.):
