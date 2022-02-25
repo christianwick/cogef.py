@@ -59,14 +59,18 @@ if __name__ == "__main__":
             choices=["restricted","unrestricted","TS"], type=str, default="restricted")
     group_tweaks.add_argument("-dx", help="increment", default=0.02,type=float)
     group_tweaks.add_argument("-dp", help="add perturbation for fragment atoms", default=1.0,type=float)
+    group_tweaks.add_argument("-ds", help="damp the additive strain perturbation", default=1.0,type=float)
     group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1 as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
     group_tweaks.add_argument("-cycles", help="number n of cycles to run", type=int, default=1)
     group_tweaks.add_argument("-restart", help="restart from cylce n. needs guess.chk and checkpoint.xyz", type=int, default=1)
+    group_tweaks.add_argument("-restart_xyz", help="restart coordinates from checkpoint.xyz", type=argparse.FileType('r'), default=None)
     group_tweaks.add_argument("-reverse", help="reverse from cylce n. needs guess.chk and start geometry as .xyz", type=int, default=None)
     group_tweaks.add_argument("-max_error_cycles", help="number n of error cycles to run", type=int, default=5)
     group_tweaks.add_argument("-symm_stretch", 
         help ="perform symmetric stretch moving both atoms (framgents). asymmetric otherwise.", action="store_true",
         default = False)
+    group_tweaks.add_argument("-use_strain", help ="compute the strain at each iteration and move the fragments by this amount",
+        action="store_true",default = False)
     group_tweaks.add_argument("-mulliken_h", 
         help ="use mulliken charges with Hydrogens summed into heavy atoms. Otherwise use standard mulliken charges",
         action="store_true", default = False)
@@ -96,12 +100,14 @@ if __name__ == "__main__":
                     "level_of_theory" : args.method , "mem" : args.mem, "nproc" : args.nproc,
                     "maxcyc" : args.maxcyc, "maxconv" : args.maxconv, "cm" : args.cm ,
                     "startchk" : args.startchk, "cycles" : args.cycles, 
-                    "reverse" : args.reverse, "restart" : args.restart, "modredundant" : args.modredundant, 
+                    "reverse" : args.reverse, "restart" : args.restart, "restart_xyz" : args.restart_xyz,
+                    "modredundant" : args.modredundant, 
                     "symm_stretch" : args.symm_stretch, "dp" : args.dp, "fragment" : args.fragment,
                     "max_error_cycles"  : args.max_error_cycles, "mulliken_h" : args.mulliken_h, "trajectory" : args.trajectory,
                     "checkpoint" : args.checkpoint, "oniomtemplate" : args.oniom, "ambertemplate" : args.amber,
                     "oniomopt" : args.oniomopt, "constraint" : args.constraint ,
-                    "no_mix" : args.no_mix, "no_micro" : args.no_micro, "quadmac" : args.quadmac }
+                    "no_mix" : args.no_mix, "no_micro" : args.no_micro, "quadmac" : args.quadmac ,
+                    "use_strain" : args.use_strain, "ds" : args.ds }
     if args.oniom:
         logger.debug("Starting ONIOM driver")
         data = driver.oniom_cogef_loop(**driver_args)

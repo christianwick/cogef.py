@@ -32,9 +32,11 @@ class cogef_loop():
     def __init__(self, atom1, atom2, dx = 0.1, runtype=None,  xyz = None,
                     level_of_theory = "B3LYP/6-31G*" , mem = "4GB", nproc = "12", print_level="#P",
                     maxcyc = None, maxconv = 75, startchk = False, cm = "0 1",
-                    cycles = 1, reverse = None, restart = 0, modredundant=None, symm_stretch=True, 
+                    cycles = 1, reverse = None, restart = 1, restart_xyz = None,
+                    modredundant=None, symm_stretch=True, 
                     dp=1.0, fragment=[], max_error_cycles = 5, mulliken_h = False,
-                    trajectory = None, checkpoint = None , no_mix = False, **kwargs):
+                    trajectory = None, checkpoint = None , no_mix = False,
+                    use_strain = False, ds = 1.0, **kwargs):
         """
         initalise all important parameters
 
@@ -68,6 +70,8 @@ class cogef_loop():
                         if True, run in other direction usind abs(dx)
                     restart : int
                         restart a previuous calculation at cycle
+                    restart_xyz : int
+                        restart a previous calculation from file
                     modredunant : list
                         list of additional modredundant options. elements e.g. "1 2 F"
                     symm_stretch : boolean 
@@ -87,6 +91,11 @@ class cogef_loop():
                     no_mix : Bool
                         If False, allow mixing of initial HOMO,LUMO orbitals, 
                         if True, turn of mixing completely.
+                    use_strain : Bool
+                        if Ture, compute strain and add it as an additive perturbation to the
+                        fragments
+                    ds: float
+                        adds an additional multiplicative damping to the strain perturbation
 
         internal Parameters:
                     self.check_stability : boolean   
@@ -107,6 +116,7 @@ class cogef_loop():
         self.modredundant = ["{} {} F".format(atom1 + 1, atom2 + 1 )]
         self.symm_stretch= symm_stretch
         self.dp = dp
+        self.ds = ds
         self.fragment = fragment
         self.max_error_cycles = max_error_cycles
         self.glog = gaussian.CheckGaussianLogfile()
@@ -116,8 +126,12 @@ class cogef_loop():
         self.maxconv = maxconv
         self.mulliken_h = mulliken_h
         self.allow_mixing = not no_mix
+        self.use_strain = use_strain
         if xyz:
             self.ginp.molecule.read_xyz(xyz)
+            self.L_zero = self.ginp.molecule.distance(self.atom1,self.atom2)
+        if restart != 1:
+            self.ginp.molecule.read_xyz(restart_xyz)
         self.trajectory = trajectory
         self.checkpoint = checkpoint
         if runtype == "restricted":
@@ -173,10 +187,14 @@ class cogef_loop():
             mix_guess : boolean
                 if True, we will mix HOMO LUMO orbitals of the guess orbs. This will only affect 
                 the runtype == unrestricted calculations.
+            current_strain : float
+                current strain. self.L_zero is computed as the distance between 
+                self.atom1 and self.atom2 at first iteration
         """
         # start the outer cogef loop
         read_guess = False
         mix_guess = False
+        current_strain = 0.0
         for cycle in self.loop_range:
             logger.info("Starting cycle {} out of a maximum of {}".format(cycle,max(self.loop_range)))
             basename = "cogef_{:03d}".format(int(cycle))
@@ -206,12 +224,29 @@ class cogef_loop():
                     error_cycle += 1
                     mix_guess = False # turn off mixing and read 
             # Modify coords for next cycle
-            self.ginp.molecule.coordinates = modstruct.mod_fragments(self.ginp.molecule.coordinates, 
-                               self.atom1, self.atom2, self.dx, symmetric=self.symm_stretch, dp=self.dp, fragment=self.fragment)
+            if self.use_strain:
+                current_strain = self.compute_strain()
+                logger.info("Current strain = {:4.3f}".format(current_strain))
+                current_strain = ( abs(self.dx) * ( cycle )) / self.L_zero
+                logger.info("Strain at next cycle = {:4.3f}".format(current_strain))
+            if self.glog.found_broken_bond:
+                # we found a broken bond and do not need the perturbations any more.
+                self.dp = 1.0
+                self.ds = 1.0
+                current_strain = 0.0
+            self.ginp.molecule.coordinates = modstruct.mod_fragments(coords = self.ginp.molecule.coordinates, 
+                               atom1 = self.atom1, atom2 = self.atom2, dx = self.dx, symmetric=self.symm_stretch,
+                               dp=self.dp, fragment = self.fragment, current_strain = current_strain)
             # write checkpoint structure to disk.
             if self.checkpoint:
                 logger.info(f"Writing checkpoint xyz file {self.checkpoint}")
                 self.ginp.molecule.write_xyz(self.checkpoint,comment=f"input structure for cycle {cycle+1}")
+    
+    def compute_strain(self):
+        L_zero = self.L_zero
+        l = self.ginp.molecule.distance(self.atom1,self.atom2)
+        return ( ( l - L_zero ) / L_zero )
+
 
     def _write_ginp_restricted(self, ginp_filename="", read_guess=False, **kwargs):
         """
@@ -356,7 +391,7 @@ class oniom_cogef_loop(cogef_loop):
 
     """
     def __init__(self, oniomtemplate, oniomopt="hybrid", constraint="modredundant", no_micro=False,
-                 quadmac = True, xyz=None, **kwargs):
+                 quadmac = True, xyz=None, restart=1, restart_xyz = None, **kwargs):
         super().__init__(**kwargs)
         self.oniomopt = oniomopt 
         self.constraint = constraint
@@ -369,6 +404,9 @@ class oniom_cogef_loop(cogef_loop):
 
         if xyz:
             self.ginp.molecule.read_xyz(xyz)
+            self.L_zero = self.ginp.molecule.distance(self.atom1,self.atom2)
+        if restart != 1:
+            self.ginp.molecule.read_xyz(restart_xyz)
         if self.constraint == "opt_flag":
             logger.debug("setting opt flags..")
             self.convert_modredundant_to_opt_flags()
@@ -668,7 +706,8 @@ class amber_cogef_loop(oniom_cogef_loop):
             select method used to constrain atoms in the cogef calculation. 
 
     """
-    def __init__(self, ambertemplate, constraint="modredundant", xyz=None, **kwargs):
+    def __init__(self, ambertemplate, constraint="modredundant", xyz=None,
+        restart = 1, restart_xyz = None, **kwargs):
         """ 
         we reuse most of the code for ONIOM type calculations. 
 
@@ -676,7 +715,7 @@ class amber_cogef_loop(oniom_cogef_loop):
         the runtype does not affect this calculation.
 
         """
-        cogef_loop.__init__(self,**kwargs)
+        cogef_loop.__init__(self, **kwargs)
         self.constraint = constraint
         self.glog = gaussian.CheckAmberLogfile()
         self.ginp = gaussian.AmberInput(mem=self.ginp.link0.mem, nproc = self.ginp.link0.nproc,
@@ -684,6 +723,9 @@ class amber_cogef_loop(oniom_cogef_loop):
         self.ginp.molecule.read_oniom_template(ambertemplate)
         if xyz:
             self.ginp.molecule.read_xyz(xyz)
+            self.L_zero = self.ginp.molecule.distance(self.atom1,self.atom2)
+        if restart != 1:
+            self.ginp.molecule.read_xyz(restart_xyz)
         if self.constraint == "opt_flag":
             logger.debug("setting opt flags..")
             self.convert_modredundant_to_opt_flags()

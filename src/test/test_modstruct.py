@@ -52,7 +52,7 @@ if __name__ == "__main__":
                 atom1 = 0, atom2 = 10,
                 fragment=[0,1,2,3], 
                 dx = 1.0, 
-                dp = 1.0, 
+                dp = 0.5, 
                 symmetric=True)
         print("Cycle: {}".format(counter))
         print(str(coords.molecule))
@@ -67,7 +67,7 @@ if __name__ == "__main__":
                 atom1 = 0, atom2 = 10,
                 fragment=[0,1,2,3], 
                 dx = -0.5, 
-                dp = 1.0, 
+                dp = 0.5, 
                 symmetric=True)
         print("Cycle: {}".format(counter))
         print(str(coords.molecule))
@@ -95,7 +95,7 @@ if __name__ == "__main__":
                 fragment=[], 
                 dx = 5.0, 
                 dp = 1.0, 
-                symmetric=True)
+                symmetric=False)
         print("Cycle: {}".format(counter))
         print(str(coords.molecule))
         counter += 1
