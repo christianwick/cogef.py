@@ -29,6 +29,8 @@ if __name__ == "__main__":
     parser.add_argument("-nproc", help="nproc", type=str, default="12")
     parser.add_argument("-mem", help="memory", type=str, default="12GB")
     parser.add_argument("-method", help="UwB97XD/def2TZVPP", type=str, default=None)
+    parser.add_argument("-chk", help="use common chk file e.g. 'guess.chk'", type=str, default=None)
+    parser.add_argument("-reverse", help="reverse calculation starting at last point", action="store_true", default=False)
 
     group_logging = parser.add_argument_group("logging")
     group_logging.add_argument("-log_level", help="set the log level", choices=["DEBUG","INFO"], default="INFO")
@@ -47,18 +49,29 @@ if __name__ == "__main__":
         logger.info("    -{:10s} : {}".format(arg,value))
     # start calculation    
     ginp = gaussian.GaussianInput(mem=args.mem, nproc=args.nproc, charge_multi = args.cm )
+    glog = gaussian.CheckGaussianLogfile()
     route = gaussian.classGaussianRoute()
     route.route = ["#P", args.method.strip()]
     xyztrj = molecule.Molecule.read_xyz_trj(args.xyztrj)
+    if args.reverse: 
+        last = len(xyztrj) - 1
+        xyztrj.reverse()
+    else: last = 0
     for nn,xyz in enumerate(xyztrj):
-        filename = "sp_{:03d}".format(nn+1)
+        cycle = abs(last - ( nn  )) + 1
+        filename = "sp_{:03d}".format(cycle)
+        if args.chk: ginp.link0.chk=args.chk
+        else: ginp.link0.chk=filename+".chk"
         ginp.molecule.read_xyz(xyz)
         with open(filename+".com", "w") as of:
-            logger.info(f"Starting cycle {nn}")
+            logger.info(f"Starting cycle {cycle}")
             ginp.of = of
             ginp.write_inputfile(link1=False, route=route, geom=True, modredundant=None)
         rungauss = subprocess.run(["cogef_rung16",filename + ".com"], check=True, capture_output=True, text=True)
-        logger.info(f"Finished gaussian sp calculation at cycle {nn}")
+        glog.filename = filename+".log"
+        glog.read_log()
+        ginp.molecule.write_xyz("gausp_trj.xyz", comment=glog.comment_line(point=cycle), write_mode="a")
+        logger.info(f"Finished gaussian sp calculation at cycle {cycle}")
 
     # STOP LOGGING HERE
     logger.info("Finished gaussian single point calculations. " )
