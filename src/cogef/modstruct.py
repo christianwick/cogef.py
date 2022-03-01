@@ -31,12 +31,16 @@ def mod_single_atom(coords,atom1,atom2,dx=0.02,symmetric=False):
         return(new_coords)
 
 
-def mod_fragments(coords, atom1, atom2, dx=0.02, dp=1.0, fragment=[0,1,2,3],
+def mod_fragments(coords, atom1, atom2, dx=0.02, dp=1.0, fragment=None, exclude = None,
         symmetric=False, current_strain = 0.0, ds = 1.0):
     """ modify the coordinates of molecules using fragments
 
-    compute the vector between atom1 and atom2
+    compute the vector between atom1 and atom2 and stretch all atoms by a certain amount
         vec = atom2 - atom1
+
+        Symmetric = True:
+        atom1 stretched by -dx ; atom2 stretched by +dx
+        frag a atoms: stretched by -dx * dp + strain * ds
 
     Parameter:
         coords: list 
@@ -49,6 +53,8 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, dp=1.0, fragment=[0,1,2,3],
         fragment: list
             litst of atom numbers starting at 0
             atom1 must be part of fragments!
+        exclude: list
+            list of atom numbers starting at 0 to be excluded from movement.
         dp: float
             add an additional perturbation for atoms exept atom1 and atom2
             no perturbation for dp=1.0.
@@ -70,6 +76,9 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, dp=1.0, fragment=[0,1,2,3],
     if fragment != []: 
         frag_a = fragment[:]
         frag_b = [ x for x in range(len(coords)) if x not in frag_a ]
+        if exclude:
+            frag_a = [ x for x in frag_a if x not in exclude ]
+            frag_b = [ x for x in frag_b if x not in exclude ]
         frag_a.remove(atom1)
         frag_b.remove(atom2)
     logger.debug("fragment A: {} ; dp: {:4.3f} A; strain: {:4.3f}; ds: {:4.3f}".format(frag_a, dp, current_strain, ds))

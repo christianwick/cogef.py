@@ -34,7 +34,8 @@ class cogef_loop():
                     maxcyc = None, maxconv = 75, startchk = False, cm = "0 1",
                     cycles = 1, reverse = None, restart = 1, restart_xyz = None,
                     modredundant=None, symm_stretch=True, 
-                    dp=1.0, fragment=[], max_error_cycles = 5, mulliken_h = False,
+                    dp=1.0, fragment = None, exclude = None, 
+                    max_error_cycles = 5, mulliken_h = False,
                     trajectory = None, checkpoint = None , no_mix = False,
                     use_strain = False, ds = 1.0, **kwargs):
         """
@@ -80,6 +81,8 @@ class cogef_loop():
                         dp used to scale the stretching of the fragment atoms
                     fragment : list 
                         contains all the atoms of the first fragment to be stretched.
+                    exclude : list 
+                        contains all the atoms not to be stretched.
                     max_error_cycles : int
                         set the maximum number of errors to restart each cycle.
                     mulliken_h : boolean
@@ -118,6 +121,7 @@ class cogef_loop():
         self.dp = dp
         self.ds = ds
         self.fragment = fragment
+        self.exclude = exclude
         self.max_error_cycles = max_error_cycles
         self.glog = gaussian.CheckGaussianLogfile()
         self.ginp = gaussian.GaussianInput(mem=mem, nproc = nproc, charge_multi = cm)
@@ -236,7 +240,8 @@ class cogef_loop():
                 current_strain = 0.0
             self.ginp.molecule.coordinates = modstruct.mod_fragments(coords = self.ginp.molecule.coordinates, 
                                atom1 = self.atom1, atom2 = self.atom2, dx = self.dx, symmetric=self.symm_stretch,
-                               dp=self.dp, fragment = self.fragment, current_strain = current_strain)
+                               dp=self.dp, fragment = self.fragment, exclude = self.exclude,
+                               current_strain = current_strain, ds=self.ds)
             # write checkpoint structure to disk.
             if self.checkpoint:
                 logger.info(f"Writing checkpoint xyz file {self.checkpoint}")

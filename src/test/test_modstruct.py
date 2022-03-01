@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join('..')))
 
 import numpy as np 
 from cogef.gaussian import GaussianInput
-from cogef.modstruct import mod_fragments, mod_single_atom, mod_atoms
+from cogef.modstruct import mod_fragments, mod_single_atom
 
 xyz_file="""11
 E(RB3LYP) = -119.164345992 on  Stat Point 2
@@ -51,6 +51,7 @@ if __name__ == "__main__":
         coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
                 atom1 = 0, atom2 = 10,
                 fragment=[0,1,2,3], 
+                exclude= [5,6],
                 dx = 1.0, 
                 dp = 0.5, 
                 symmetric=True)
@@ -66,6 +67,7 @@ if __name__ == "__main__":
         coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
                 atom1 = 0, atom2 = 10,
                 fragment=[0,1,2,3], 
+                exclude = [5,6],
                 dx = -0.5, 
                 dp = 0.5, 
                 symmetric=True)

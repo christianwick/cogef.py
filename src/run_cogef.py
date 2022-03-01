@@ -61,6 +61,7 @@ if __name__ == "__main__":
     group_tweaks.add_argument("-dp", help="add perturbation for fragment atoms", default=1.0,type=float)
     group_tweaks.add_argument("-ds", help="damp the additive strain perturbation", default=1.0,type=float)
     group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1 as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
+    group_tweaks.add_argument("-exclude",help="list of atoms to exclude from fragments as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
     group_tweaks.add_argument("-cycles", help="number n of cycles to run", type=int, default=1)
     group_tweaks.add_argument("-restart", help="restart from cylce n. needs guess.chk and checkpoint.xyz", type=int, default=1)
     group_tweaks.add_argument("-restart_xyz", help="restart coordinates from checkpoint.xyz", type=argparse.FileType('r'), default=None)
@@ -84,6 +85,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     atom1 ,atom2 = [ int(x)-1 for x in args.at.split(",") ]
     args.fragment = misc.convert_inputstr(args.fragment)
+    args.exclude = misc.convert_inputstr(args.exclude)
     args.modredundant = misc.convert_modredundant(args.modredundant) 
 
     # START LOGGING HERE
@@ -102,7 +104,7 @@ if __name__ == "__main__":
                     "startchk" : args.startchk, "cycles" : args.cycles, 
                     "reverse" : args.reverse, "restart" : args.restart, "restart_xyz" : args.restart_xyz,
                     "modredundant" : args.modredundant, 
-                    "symm_stretch" : args.symm_stretch, "dp" : args.dp, "fragment" : args.fragment,
+                    "symm_stretch" : args.symm_stretch, "dp" : args.dp, "fragment" : args.fragment, "exclude" : args.exclude,
                     "max_error_cycles"  : args.max_error_cycles, "mulliken_h" : args.mulliken_h, "trajectory" : args.trajectory,
                     "checkpoint" : args.checkpoint, "oniomtemplate" : args.oniom, "ambertemplate" : args.amber,
                     "oniomopt" : args.oniomopt, "constraint" : args.constraint ,
