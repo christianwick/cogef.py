@@ -82,7 +82,7 @@ class analyse_cogef():
             self.energies.append(mol.energy)
             self.spin.append(mol.spin)
             self.molecules.append(mol)
-            self.num_struc.append(nn)
+            self.num_struc.append(nn+1)
         self.energies = np.array(self.energies)
         self.rel_en_kj_mol = self._compute_rel_energy(self.energies,use_first_point=use_first_point,use_first_minimum=use_first_minimum)
         if isinstance(filter_en, float):
