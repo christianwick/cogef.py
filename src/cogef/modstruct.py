@@ -8,15 +8,15 @@ import logging
 
 logger = logging.getLogger("mobetatruct")
 
-def mod_single_atom(coorbeta,atom1,atom2,dx=0.02,symmetric=False):
+def mod_single_atom(coords,atom1,atom2,dx=0.02,symmetric=False):
     logger.debug("moving single atom: {} {} by {} A".format(atom1,atom2,dx))
-    if len(coorbeta[0]) == 4:
-        elements = [x[0] for x in coorbeta]
-        coorbeta = [[x[1],x[2],x[3]] for x in coorbeta ]
-    r1 = np.array([float(coorbeta[atom1][0]),float(coorbeta[atom1][1]),float(coorbeta[atom1][2])])
-    r2 = np.array([float(coorbeta[atom2][0]),float(coorbeta[atom2][1]),float(coorbeta[atom2][2])])
+    if len(coords[0]) == 4:
+        elements = [x[0] for x in coords]
+        coords = [[x[1],x[2],x[3]] for x in coords ]
+    r1 = np.array([float(coords[atom1][0]),float(coords[atom1][1]),float(coords[atom1][2])])
+    r2 = np.array([float(coords[atom2][0]),float(coords[atom2][1]),float(coords[atom2][2])])
     vec = ( r2 - r1 ) / np.linalg.norm( r2 - r1 )
-    new_coorbeta = coorbeta 
+    new_coorbeta = coords 
     if symmetric:
         new_r1 = r1 - vec * dx * 0.5 
         new_r2 = r2 + vec * dx * 0.5
@@ -25,13 +25,13 @@ def mod_single_atom(coorbeta,atom1,atom2,dx=0.02,symmetric=False):
     else:
         new_r1 = r1 - vec * dx
         new_coorbeta[atom1] = new_r1
-    if len(coorbeta[0]) == 4:
+    if len(coords[0]) == 4:
         return(zip(elements,new_coorbeta))
     else:
         return(new_coorbeta)
 
 
-def mod_fragments(coorbeta, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exclude = None,
+def mod_fragments(coords, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exclude = None,
         symmetric=False, current_strain = 0.0, beta = 1.0):
     """ modify the coordinates of molecules using fragments
 
@@ -43,7 +43,7 @@ def mod_fragments(coorbeta, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exc
         frag a atoms: stretched by -dx * alpha + strain * beta
 
     Parameter:
-        coorbeta: list 
+        coords: list 
             lsit of coordinates [x,y,z],...]
         atom1: int 
             first atom to stretch by dx
@@ -68,14 +68,14 @@ def mod_fragments(coorbeta, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exc
         mat : np.array(n,3)
     """
     logger.debug("moving atoms: {} {} by {} A, symmetric = {}".format(atom1,atom2,dx,symmetric))
-    if len(coorbeta[0]) == 4:
-        elements = [x[0] for x in coorbeta]
-        coorbeta = [[x[1],x[2],x[3]] for x in coorbeta ]
+    if len(coords[0]) == 4:
+        elements = [x[0] for x in coords]
+        coords = [[x[1],x[2],x[3]] for x in coords ]
     frag_a = []
     frag_b = []
     if fragment != []: 
         frag_a = fragment[:]
-        frag_b = [ x for x in range(len(coorbeta)) if x not in frag_a ]
+        frag_b = [ x for x in range(len(coords)) if x not in frag_a ]
         if exclude:
             frag_a = [ x for x in frag_a if x not in exclude ]
             frag_b = [ x for x in frag_b if x not in exclude ]
@@ -83,7 +83,7 @@ def mod_fragments(coorbeta, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exc
         frag_b.remove(atom2)
     logger.debug("fragment A: {} ; alpha: {:4.3f} A; strain: {:4.3f}; beta: {:4.3f}".format(frag_a, alpha, current_strain, beta))
     logger.debug("fragment B: {} ; alpha: {:4.3f} A; strain: {:4.3f}; beta: {:4.3f}".format(frag_b, alpha, current_strain, beta))
-    mat = np.array(coorbeta)
+    mat = np.array(coords)
     vec = ( mat[atom2,:] - mat[atom1,:] ) / np.linalg.norm( mat[atom1,:] - mat[atom2,:] )
     vec_dx = vec * dx
     vec_alpha = vec * ( ( dx * alpha ) * ( 1.0 + ( current_strain * beta ) )  )
@@ -101,7 +101,7 @@ def mod_fragments(coorbeta, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exc
 
     mat += u
 
-    if len(coorbeta[0]) == 4:
+    if len(coords[0]) == 4:
         return(zip(elements,mat))
     else:
         return(mat)
