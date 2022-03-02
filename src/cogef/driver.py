@@ -134,7 +134,7 @@ class cogef_loop():
         if xyz:
             self.ginp.molecule.read_xyz(xyz)
             self.L_zero = self.ginp.molecule.distance(self.atom1,self.atom2)
-        if restart != 1:
+        if restart_xyz:
             self.ginp.molecule.read_xyz(restart_xyz)
         self.trajectory = trajectory
         self.checkpoint = checkpoint
@@ -396,7 +396,7 @@ class oniom_cogef_loop(cogef_loop):
 
     """
     def __init__(self, oniomtemplate, oniomopt="hybrid", constraint="modredundant", no_micro=False,
-                 quadmac = True, xyz=None, restart=1, restart_xyz = None, **kwargs):
+                 quadmac = True, xyz=None, restart_xyz = None, **kwargs):
         super().__init__(**kwargs)
         self.oniomopt = oniomopt 
         self.constraint = constraint
@@ -410,7 +410,7 @@ class oniom_cogef_loop(cogef_loop):
         if xyz:
             self.ginp.molecule.read_xyz(xyz)
             self.L_zero = self.ginp.molecule.distance(self.atom1,self.atom2)
-        if restart != 1:
+        if restart_xyz:
             self.ginp.molecule.read_xyz(restart_xyz)
         if self.constraint == "opt_flag":
             logger.debug("setting opt flags..")
@@ -712,7 +712,7 @@ class amber_cogef_loop(oniom_cogef_loop):
 
     """
     def __init__(self, ambertemplate, constraint="modredundant", xyz=None,
-        restart = 1, restart_xyz = None, **kwargs):
+        restart_xyz = None, **kwargs):
         """ 
         we reuse most of the code for ONIOM type calculations. 
 
@@ -729,7 +729,7 @@ class amber_cogef_loop(oniom_cogef_loop):
         if xyz:
             self.ginp.molecule.read_xyz(xyz)
             self.L_zero = self.ginp.molecule.distance(self.atom1,self.atom2)
-        if restart != 1:
+        if restart_xyz:
             self.ginp.molecule.read_xyz(restart_xyz)
         if self.constraint == "opt_flag":
             logger.debug("setting opt flags..")
