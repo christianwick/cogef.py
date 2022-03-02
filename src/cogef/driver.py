@@ -34,10 +34,10 @@ class cogef_loop():
                     maxcyc = None, maxconv = 75, startchk = False, cm = "0 1",
                     cycles = 1, reverse = None, restart = 1, restart_xyz = None,
                     modredundant=None, symm_stretch=True, 
-                    dp=1.0, fragment = None, exclude = None, 
+                    alpha=1.0, fragment = None, exclude = None, 
                     max_error_cycles = 5, mulliken_h = False,
                     trajectory = None, checkpoint = None , no_mix = False,
-                    use_strain = False, ds = 1.0, **kwargs):
+                    use_strain = False, beta = 1.0, **kwargs):
         """
         initalise all important parameters
 
@@ -77,8 +77,8 @@ class cogef_loop():
                         list of additional modredundant options. elements e.g. "1 2 F"
                     symm_stretch : boolean 
                         stretch symmetric (True) or asymmetric (False)
-                    dp : float
-                        dp used to scale the stretching of the fragment atoms
+                    alpha : float
+                        alpha used to scale the stretching of the fragment atoms
                     fragment : list 
                         contains all the atoms of the first fragment to be stretched.
                     exclude : list 
@@ -97,7 +97,7 @@ class cogef_loop():
                     use_strain : Bool
                         if Ture, compute strain and add it as an additive perturbation to the
                         fragments
-                    ds: float
+                    beta: float
                         adds an additional multiplicative damping to the strain perturbation
 
         internal Parameters:
@@ -118,8 +118,8 @@ class cogef_loop():
         self.atom2 = atom2
         self.modredundant = ["{} {} F".format(atom1 + 1, atom2 + 1 )]
         self.symm_stretch= symm_stretch
-        self.dp = dp
-        self.ds = ds
+        self.alpha = alpha
+        self.beta = beta
         self.fragment = fragment
         self.exclude = exclude
         self.max_error_cycles = max_error_cycles
@@ -235,13 +235,13 @@ class cogef_loop():
                 logger.info("Strain at next cycle = {:4.3f}".format(current_strain))
             if self.glog.found_broken_bond:
                 # we found a broken bond and do not need the perturbations any more.
-                self.dp = 1.0
-                self.ds = 1.0
+                self.alpha = 1.0
+                self.beta = 1.0
                 current_strain = 0.0
             self.ginp.molecule.coordinates = modstruct.mod_fragments(coords = self.ginp.molecule.coordinates, 
                                atom1 = self.atom1, atom2 = self.atom2, dx = self.dx, symmetric=self.symm_stretch,
-                               dp=self.dp, fragment = self.fragment, exclude = self.exclude,
-                               current_strain = current_strain, ds=self.ds)
+                               alpha=self.alpha, fragment = self.fragment, exclude = self.exclude,
+                               current_strain = current_strain, beta=self.beta)
             # write checkpoint structure to disk.
             if self.checkpoint:
                 logger.info(f"Writing checkpoint xyz file {self.checkpoint}")
