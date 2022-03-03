@@ -33,7 +33,7 @@ class cogef_loop():
                     level_of_theory = "B3LYP/6-31G*" , mem = "4GB", nproc = "12", print_level="#P",
                     maxcyc = None, maxconv = 75, startchk = False, cm = "0 1",
                     cycles = 1, reverse = None, restart = 1, restart_xyz = None,
-                    modredundant=None, symm_stretch=True, 
+                    modredundant=None, readfc=False, symm_stretch=True, 
                     alpha=1.0, fragment = None, exclude = None, 
                     max_error_cycles = 5, mulliken_h = False,
                     trajectory = None, checkpoint = None , no_mix = False,
@@ -75,6 +75,8 @@ class cogef_loop():
                         restart a previous calculation from file
                     modredunant : list
                         list of additional modredundant options. elements e.g. "1 2 F"
+                    readfc : bool
+                        read force constants from checkpoint file if True
                     symm_stretch : boolean 
                         stretch symmetric (True) or asymmetric (False)
                     alpha : float
@@ -129,6 +131,7 @@ class cogef_loop():
         self.maxcyc = maxcyc
         self.maxconv = maxconv
         self.mulliken_h = mulliken_h
+        self.readfc = readfc
         self.allow_mixing = not no_mix
         self.use_strain = use_strain
         if xyz:
@@ -272,6 +275,7 @@ class cogef_loop():
             route = gaussian.classGaussianRoute()
             route.route = [self.print_level, self.level_of_theory , "nosymm", "test"] 
             route.opt = ["modredundant", "RFO"]
+            if self.readfc: route.opt.append("ReadFC")
             if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
             if read_guess: route.guess = ["read"]
             self.ginp.write_inputfile(link1=False,route=route,geom=True,modredundant=self.modredundant)
@@ -298,8 +302,9 @@ class cogef_loop():
             route.route = [self.print_level, self.level_of_theory , "nosymm", "test"]
             route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
             route.opt = ["modredundant","RFO"]
-            if mix_guess: route.guess.append("mix")
+            if self.readfc: route.opt.append("ReadFC")
             if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
+            if mix_guess: route.guess.append("mix")
             if read_guess: route.guess.append("read")
             self.ginp.write_inputfile(link1=False,route=route,geom=True,modredundant=self.modredundant)
             # JOB 2 stability analysis
@@ -466,6 +471,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.iop = ["2/15=3"]
                 if self.no_micro: route.opt = ["NoMicro"]
                 else: route.opt = ["Mic120"]
+                if self.readfc: route.opt.append("ReadFC")
                 if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc)) # if 0, no optimisation!
                 if self.constraint == "modredundant": route.opt.append("modredundant")
@@ -479,6 +485,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.iop = ["2/15=3"]
                 route.guess = ["TCheck"]
                 if self.no_micro: route.opt = ["NoMicro"]
+                if self.readfc: route.opt.append("ReadFC")
                 if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
                 if self.constraint == "modredundant": route.opt.append("modredundant")
@@ -496,6 +503,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.iop = ["2/15=3"]
                 if self.no_micro: route.opt = ["NoMicro"]
                 else: route.opt = ["Mic120"]
+                if self.readfc: route.opt.append("ReadFC")
                 if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
                 if self.constraint == "modredundant": route.opt.append("modredundant")
@@ -522,6 +530,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["connect"]
                 if self.no_micro: route.opt = ["NoMicro"]
                 else: route.opt = ["Quadmac"]
+                if self.readfc: route.opt.append("ReadFC")
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
                 if self.constraint == "modredundant": route.opt.append("modredundant")
                 if read_guess: route.guess =  ["read"]
@@ -539,6 +548,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.geom = ["connect"]
                 if self.no_micro: route.opt = ["NoMicro"]
                 else: route.opt = ["Mic120"]
+                if self.readfc: route.opt.append("ReadFC")
                 if self.quadmac: route.opt.append("QuadMac")
                 if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
                 if self.constraint == "modredundant": route.opt.append("modredundant")
@@ -582,6 +592,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
                 if self.no_micro: route.opt = ["NoMicro"]
                 else: route.opt = ["Mic120"]
+                if self.readfc: route.opt.append("ReadFC")
                 if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 if mix_guess: route.guess.append("mix")
@@ -596,6 +607,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.iop = ["2/15=3"]
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
                 if self.no_micro: route.opt = ["NoMicro"]
+                if self.readfc: route.opt.append("ReadFC")
                 if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 route.guess.append("TCheck")
@@ -624,6 +636,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
                 if self.no_micro: ["NoMicro"]
                 else: route.opt = ["Mic120"]
+                if self.readfc: route.opt.append("ReadFC")
                 if self.quadmac: route.opt.append("Quadmac")
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 if mix_guess: route.guess.append("mix")
@@ -652,6 +665,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.iop = ["2/15=3"]
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
                 if self.no_micro: route.opt =  ["NoMicro"]
+                if self.readfc: route.opt.append("ReadFC")
                 if self.quadmac: route.opt.append("QuadMac")
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 if mix_guess: route.guess.append("mix")
@@ -681,6 +695,7 @@ class oniom_cogef_loop(cogef_loop):
                 route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
                 if self.no_micro: route.opt = ["NoMicro"]
                 else: route.opt = ["Mic120"]
+                if self.readfc: route.opt.append("ReadFC")
                 if self.quadmac: route.opt.append("QuadMac")
                 if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
                 if mix_guess: route.guess.append("mix")
@@ -761,6 +776,7 @@ class amber_cogef_loop(oniom_cogef_loop):
             route.iop = ["2/15=3"]
             route.geom = ["connect"]
             route.opt = ["NoMicro"]
+            if self.readfc: route.opt.append("ReadFC")
             if self.maxcyc: route.opt.append("maxcyc="+str(self.maxcyc))
             if self.constraint == "modredundant": route.opt.append("modredundant")
             self.ginp.write_inputfile(link1=False,route=route, geom=True, connectivity=True, 

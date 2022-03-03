@@ -48,6 +48,7 @@ if __name__ == "__main__":
     group_gaussian.add_argument("-maxconv", help="Sets the maximum number conventional SCF cycles", type=int, default=75)
     group_gaussian.add_argument("-modredundant", help="add additional modredundant sections separated by ',' eg. '1 2 F, 2 3 F'", 
         type=str, default="")
+    group_gaussian.add_argument("-readfc", help="use initial ForceConstants from guess.chk", action="store_true", default=False)
 
     group_output = parser.add_argument_group("Output options")
     group_output.add_argument("-trajectory", help="write trajectory to file", type=argparse.FileType("a"), default=None)
@@ -103,7 +104,7 @@ if __name__ == "__main__":
                     "maxcyc" : args.maxcyc, "maxconv" : args.maxconv, "cm" : args.cm ,
                     "startchk" : args.startchk, "cycles" : args.cycles, 
                     "reverse" : args.reverse, "restart" : args.restart, "restart_xyz" : args.restart_xyz,
-                    "modredundant" : args.modredundant, 
+                    "modredundant" : args.modredundant, "readfc" : args.readfc,
                     "symm_stretch" : args.symm_stretch, "alpha" : args.alpha, "fragment" : args.fragment, "exclude" : args.exclude,
                     "max_error_cycles"  : args.max_error_cycles, "mulliken_h" : args.mulliken_h, "trajectory" : args.trajectory,
                     "checkpoint" : args.checkpoint, "oniomtemplate" : args.oniom, "ambertemplate" : args.amber,
