@@ -233,14 +233,17 @@ class cogef_loop():
             # Modify coords for next cycle
             if self.use_strain:
                 current_strain = self.compute_strain()
+                self.alpha = 0.0
                 logger.info("Current strain = {:4.3f}".format(current_strain))
                 current_strain = ( abs(self.dx) * ( cycle )) / self.L_zero
                 logger.info("Strain at next cycle = {:4.3f}".format(current_strain))
             if self.glog.found_broken_bond:
                 # we found a broken bond and do not need the perturbations any more.
+                # furthermore, we do not need to mix the orbitals at the beginning, anymore
                 self.alpha = 1.0
-                self.beta = 1.0
                 current_strain = 0.0
+                mix_guess = False
+                self.allow_mixing = False
             self.ginp.molecule.coordinates = modstruct.mod_fragments(coords = self.ginp.molecule.coordinates, 
                                atom1 = self.atom1, atom2 = self.atom2, dx = self.dx, symmetric=self.symm_stretch,
                                alpha=self.alpha, fragment = self.fragment, exclude = self.exclude,
@@ -249,6 +252,7 @@ class cogef_loop():
             if self.checkpoint:
                 logger.info(f"Writing checkpoint xyz file {self.checkpoint}")
                 self.ginp.molecule.write_xyz(self.checkpoint,comment=f"input structure for cycle {cycle+1}")
+                self.ginp.molecule.write_xyz(self.checkpoint+"_trj.xyz", comment=f"input structure for cycle {cycle+1}", write_mode="a")
     
     def compute_strain(self):
         L_zero = self.L_zero
