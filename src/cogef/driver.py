@@ -241,6 +241,7 @@ class cogef_loop():
                 # we found a broken bond and do not need the perturbations any more.
                 # furthermore, we do not need to mix the orbitals at the beginning, anymore
                 self.alpha = 1.0
+                self.beta = 0.0
                 current_strain = 0.0
                 mix_guess = False
                 self.allow_mixing = False

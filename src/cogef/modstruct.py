@@ -86,21 +86,28 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exclu
     mat = np.array(coords)
     vec = ( mat[atom2,:] - mat[atom1,:] ) / np.linalg.norm( mat[atom1,:] - mat[atom2,:] )
     vec_dx = vec * dx
-    vec_dp = vec * ( ( dx * alpha ) * ( 1.0 + ( current_strain * beta ) )  )
-    logger.debug(f"effective dx: {np.linalg.norm(vec_dx):4.3f}; effective dx + strain {np.linalg.norm(vec_dp):4.3f}")
+    logger.debug(f"effective dx: {np.linalg.norm(vec_dx):4.3f}")
 
     u = np.zeros_like(mat)
     if symmetric:
-        u[frag_a] -= vec * 0.5 * (dx * alpha + beta * current_strain * np.linalg.norm(mat[frag_a] - mat[atom1],axis=1,keepdims=True))
-        u[frag_b] += vec * 0.5 * (dx * alpha + beta * current_strain * np.linalg.norm(mat[frag_b] - mat[atom2],axis=1,keepdims=True))
+        vec_a = ( mat[frag_a] - mat[atom1] ) * current_strain 
+        vec_b = ( mat[frag_b] - mat[atom2] ) * current_strain 
+        logger.debug(f"norm vec_a: {np.linalg.norm(vec_a,axis=1)}")
+        logger.debug(f"norm vec_b: {np.linalg.norm(vec_b,axis=1)}")
+        dot_a = np.abs(np.matmul(vec_a,vec))
+        dot_b = np.abs(np.matmul(vec_b,vec))
+        u[frag_a] -= vec * 0.5 * (( dx * alpha ) + ( beta * dot_a[:,None] ))
+        u[frag_b] += vec * 0.5 * (( dx * alpha ) + ( beta * dot_b[:,None] ))
         u[atom1] -= vec_dx * 0.5
         u[atom2] += vec_dx * 0.5
         
     else: 
-        u[frag_a] -= vec_dp 
+        vec_a = ( mat[frag_a] - mat[atom1] ) * current_strain 
+        logger.debug(f"norm vec_a: {np.linalg.norm(vec_a,axis=1)}")
+        dot_a = np.abs(np.matmul(vec_a,vec))
+        u[frag_a] -= vec * (( dx * alpha ) + ( beta * dot_a[:,None] ))
         u[atom1] -= vec_dx 
-    logger.debug(f"u: {u}")
-    logger.debug(f"norms: {np.linalg.norm(u,axis=1,keepdims=True)}")
+    logger.debug(f"norm u: {np.linalg.norm(u,axis=1)}")
 
     mat += u
 
