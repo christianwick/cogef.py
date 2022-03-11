@@ -214,7 +214,7 @@ class analyse_cogef():
     def compute_forces(self, dist_index=0):
         de = ( self.energies[1:] - self.energies[:-1] ) * constants.hartree_to_J
         dx = ( self.distances[1:,dist_index] - self.distances[:-1,dist_index] ) * constants.angstrom_to_m
-        self.forces = np.divide(de,dx) * 1.0E9 # from N to nN
+        self.forces = np.append( [0.0], np.divide(de,dx) * 1.0E9 ) # from N to nN
         self.max_force = np.max(self.forces)
         logger.info("Max Force = {:7.3f} nN".format(self.max_force))
 
