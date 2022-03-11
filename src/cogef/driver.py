@@ -155,8 +155,15 @@ class cogef_loop():
             self.check_stability = True
             self.check_imag_freq = False
             self.mix_guess = True
-        elif runtype == "TS":
-            self.write_ginp = self._write_ginp_ts # here we are not calling the function!
+        elif runtype == "rTS":
+            self.write_ginp = self._write_ginp_restricted_ts # here we are not calling the function!
+            self.check_error = True
+            self.check_stationary = True
+            self.check_stability = True
+            self.check_imag_freq = True
+            self.mix_guess = False
+        elif runtype == "uTS":
+            self.write_ginp = self._write_ginp_unrestricted_ts # here we are not calling the function!
             self.check_error = True
             self.check_stationary = True
             self.check_stability = True
@@ -320,7 +327,7 @@ class cogef_loop():
             route.geom = ["allcheck"]
             self.ginp.write_inputfile(link1=True,route=route,geom=False)
     
-    def _write_ginp_ts(self, ginp_filename="", read_guess=False, **kwargs):
+    def _write_ginp_restricted_ts(self, ginp_filename="", read_guess=False, **kwargs):
         """
         generate input file for restricted cogef calculations. This will NOT CHECK the stability of the 
         wfn at each cycle.
@@ -342,6 +349,36 @@ class cogef_loop():
             if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
             if read_guess: route.guess = ["read"]
             self.ginp.write_inputfile(link1=False,route=route,geom=True,modredundant=self.modredundant)
+
+    def _write_ginp_unrestricted_ts(self, ginp_filename="", read_guess=False, **kwargs):
+        """
+        generate input file for restricted cogef calculations. This WILL CHECK THE stability of the 
+        wfn at each cycle.
+
+        Paramter: 
+                ginp_filename : str
+                        filename of the ginp file that should be generated.
+                read_guess : boolean
+                        if True, use the previous wfn as guess.
+        """
+        logger.info(f"setting chk point file to {'guess.chk'}")
+        self.ginp.link0.chk="guess.chk"    
+        with open(ginp_filename, "w") as of:
+            self.ginp.of = of
+            # JOB 1 geometry optimisation
+            route = gaussian.classGaussianRoute()
+            route.route = [self.print_level, self.level_of_theory , "nosymm", "test", "FREQ"] 
+            route.opt = ["TS","CALCFC","modredundant", "RFO"]
+            if self.maxcyc: route.opt.append("MaxCyc="+str(self.maxcyc))
+            if read_guess: route.guess = ["read"]
+            self.ginp.write_inputfile(link1=False,route=route,geom=True,modredundant=self.modredundant)
+            # JOB 2 stability analysis
+            route = gaussian.classGaussianRoute()
+            route.route = [self.print_level, self.level_of_theory , "nosymm", "stable=opt", "test"]
+            route.scf = ["XQC", "Maxconv="+str(self.maxconv)]
+            route.guess = ["TCheck"]
+            route.geom = ["allcheck"]
+            self.ginp.write_inputfile(link1=True,route=route,geom=False)
 
     def check_gaussian_logfile(self,filename,cycle,error_cycle):
         """

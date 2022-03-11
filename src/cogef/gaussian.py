@@ -34,6 +34,7 @@ class classGaussianRoute():
         self.geom = []
         self.scf = []
         self.iop = []
+        self.test = True
 
     def __str__(self):
         line = ""
@@ -43,6 +44,7 @@ class classGaussianRoute():
         line += self._keywords_to_string("geom", self.geom) + " "
         line += self._keywords_to_string("IOp", self.iop) + " "
         line += self._keywords_to_string("scf", self.scf) + " "
+        if self.test: line +=  " test "
         return (line)
 
     @staticmethod
@@ -190,6 +192,12 @@ class CheckGaussianLogfile():
             self.found_borken_bond : bool
                 True if broken bond has been detected for the first time!
             These internal variables will be updated each to you use self.read_log()
+            self.spin : float
+            self.scf_energy : float
+            self.molecule : class Molecule()
+            self.mulliken : class Mulliken()
+            self.imag_frequencies : list
+            self.lowest_freq : float
 
 
     """
@@ -218,6 +226,7 @@ class CheckGaussianLogfile():
         self.molecule = Molecule()
         self.mulliken = Mulliken()
         self.imag_frequencies = []
+        self.lowest_freq = None
     
     def read_log(self, mulliken_h = False):
         """
@@ -244,6 +253,7 @@ class CheckGaussianLogfile():
         self.spin = 0.0
         self.scf_energy = 0.0
         self.imag_frequencies = []
+        self.lowest_freq = None
         
         last_line = ""
         logger.debug(f"Reading gaussian log file {self.filename}")
@@ -299,10 +309,12 @@ class CheckGaussianLogfile():
 
     def _read_frequencies(self,line):
         if self._find_frequencies.search(line):
+            if not self.lowest_freq: self.lowest_freq = float(line.split()[2])
             for val in line.split()[2:]:
                 if float(val) < 0. : 
                     logger.info(f"Found imag freq: {val}")
                     self.imag_frequencies.append(float(val))
+                if float(val) < self.lowest_freq: self.lowest_freq = float(val)
 
     def _read_stationary(self,line):
         if self._find_stationary.search(line):
@@ -365,6 +377,8 @@ class CheckGaussianLogfile():
         comment = f"{self.scf_energy} | S**2 = {self.spin:.3f}"
         if isinstance(point,int):
             comment += f" | point {point:03d}"
+        if isinstance(self.lowest_freq,float):
+            comment += f" | freq {self.lowest_freq:.3f}"
         return(comment)
     
     @staticmethod

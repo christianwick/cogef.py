@@ -56,8 +56,8 @@ if __name__ == "__main__":
             type=str, default="checkpoint.xyz")
 
     group_tweaks = parser.add_argument_group("cogef")
-    group_tweaks.add_argument("-runtype", help="restricted/unrestricted/TS cogef", 
-            choices=["restricted","unrestricted","TS"], type=str, default="restricted")
+    group_tweaks.add_argument("-runtype", help="restricted/unrestricted/rTS/uTS cogef", 
+            choices=["restricted","unrestricted","rTS","uTS"], type=str, default="restricted")
     group_tweaks.add_argument("-dx", help="step size.", default=0.02,type=float)
     group_tweaks.add_argument("-alpha", help="add perturbation for fragment atoms", default=1.0,type=float)
     group_tweaks.add_argument("-beta", help="damp the additive strain perturbation", default=1.0,type=float)
@@ -97,7 +97,12 @@ if __name__ == "__main__":
     logger.info("Version: {}".format(__version__))
     logger.info("Command line Arguments: ")
     for arg,value in (vars(args)).items():
-        logger.info("    -{:10s} : {}".format(arg,value))
+        # we print out all options. internal numbering starts at 0, input at 1!
+        # Therefore, we fix the printout for the logfile.
+        if arg == "fragment": logger.info("    -{:10s} : {}".format(arg,[ x+1 for x in value]))
+        elif arg == "exclude": logger.info("    -{:10s} : {}".format(arg,[ x+1 for x in value]))
+        else: logger.info("    -{:10s} : {}".format(arg,value))
+
 
     driver_args = { "xyz" : args.xyz, "runtype" : args.runtype, "atom1" : atom1 , "atom2" : atom2, "dx" : args.dx, 
                     "level_of_theory" : args.method , "mem" : args.mem, "nproc" : args.nproc,
