@@ -54,7 +54,8 @@ def get_dist_tuple(raw):
     input_tuple = []
     temp = raw.split(";")
     for pair in temp:
-        input_tuple.append((int(pair.split()[0])-1,int(pair.split()[1])-1))
+        #input_tuple.append((int(pair.split()[0])-1,int(pair.split()[1])-1))
+        input_tuple.append(tuple( [int(x) - 1  for x in pair.split() ] ))
     return(input_tuple)
 
 
@@ -75,16 +76,19 @@ class analyse_cogef():
         self.dist_tupl = []
         self.forces = []
         self.max_force = None
+        self.eps = [] # difference of distances
+        self.eps_label = [] # difference of distances
 
     def fill_with_molecules(self,trajectories, filter_en = False,
-                            use_first_minimum = False, use_first_point = False):
+                            use_first_minimum = False, use_first_point = False, ref_en=None):
         for nn, mol in enumerate(trajectories):
             self.energies.append(mol.energy)
             self.spin.append(mol.spin)
             self.molecules.append(mol)
             self.num_struc.append(nn+1)
         self.energies = np.array(self.energies)
-        self.rel_en_kj_mol = self._compute_rel_energy(self.energies,use_first_point=use_first_point,use_first_minimum=use_first_minimum)
+        self.rel_en_kj_mol = self._compute_rel_energy(self.energies,use_first_point=use_first_point,
+            use_first_minimum=use_first_minimum, reference_energy=ref_en)
         if isinstance(filter_en, float):
             self._filter_data_by_energy(filter_en)
         en_max = self._find_maxima(self.energies)
@@ -92,11 +96,13 @@ class analyse_cogef():
             logger.info("Found Energy maximum at point {:3} = {:7.3f} kJ/mol".format(val, self.rel_en_kj_mol[val]))
 
     def _compute_rel_energy(self,energies,conv_factor=constants.hartree_to_kJ_mol, use_first_minimum = False, 
-                            use_first_point = False):
+                            use_first_point = False, reference_energy=None):
         if use_first_minimum :
             en_min = self._find_first_energy_minimum(energies)
         elif use_first_point:
             en_min = energies[0]
+        elif reference_energy:
+            en_min = reference_energy
         else:
             en_min = np.min(energies)
         return ( (energies - en_min ) * conv_factor )
@@ -154,6 +160,20 @@ class analyse_cogef():
         self.distances, self.distances_label = self._compute_distances(self.molecules, self.dist_tupl)
         self._compute_rel_distance_min_energy_structure()
         self._compute_strain()
+
+    def save_eps(self,eps_tuples):
+        """ compute eps = difference of distances """
+        temp_eps = []
+        self.eps_label=[]
+        # eps tuples are of form
+        # [(1,2 ,3 ,4),(....),...]
+        for tup in eps_tuples:
+            temp_dist_tuples = [(tup[0],tup[1]),(tup[2],tup[3])]
+            dist, label = self._compute_distances(self.molecules,temp_dist_tuples)
+            temp_eps.append(np.squeeze(np.diff(dist)))
+            self.eps_label.append("eps({}-{})".format(label[0],label[1]))
+        # transpose array to get right shape (len(molecules),len(eps tuples))
+        self.eps = np.array(temp_eps).T
 
     def _compute_rel_distance_min_energy_structure(self):
         en_minimum = np.argmin(self.energies)
@@ -242,11 +262,13 @@ class analyse_cogef():
     def write_en_csv(self,of,print_veff=False,print_strain=False,print_spin=True):
         header = ["Num Struc"]
         # set distances
-        if len(self.distances[:,0]) == len(self.energies):
+        if len(self.distances) == len(self.energies):
             header.extend(self.distances_label)
             header.extend(self.rel_distances_label)
             if print_strain:
                 header.extend(self.strain_label)
+        if len(self.eps) == len(self.energies):
+            header.extend(self.eps_label)
         header.append("Energy [au]")
         header.append("Rel Energy [kJ mol-1]")
         if print_veff == True:
@@ -262,6 +284,8 @@ class analyse_cogef():
                 row.extend(self.rel_distances[nn])
                 if print_strain:
                     row.extend(self.strain[nn])
+            if len(self.eps) == len(self.energies):
+                row.extend(self.eps[nn])
             row.append(self.energies[nn])
             row.append(self.rel_en_kj_mol[nn])
             if print_veff == True:
@@ -281,6 +305,8 @@ if __name__ == "__main__" :
     parser.add_argument("-fil",help="filter out energies higher than nn", type=float, default=None)
     parser.add_argument("-d",help="distances to analyse as pairs, e.g. '0 1; 2 3'. the first distance pair"+\
                                   "will be used to compute veff.", default=None)
+    parser.add_argument("-eps",help="compute difference of distances. needs 2 atom pairs "+\
+                                "'0 1  2 3 = (d0-1 - d2-3)'.", default=None)                              
     parser.add_argument("-strain",help="compute strain", action="store_true", default=False)
     parser.add_argument("-compforce",help="compute forces", action="store_true", default=False)
     parser.add_argument("-veff",help="compute veff", action="store_true", default=False)
@@ -289,6 +315,7 @@ if __name__ == "__main__" :
     parser.add_argument("-forces",help="forces to use in veff calculations, e.g. '0.5; 1.0; 1.5'", default=False)
     parser.add_argument("-first_min",help="use first minimum instead of global minimum to compute veff", action="store_true", default=False)
     parser.add_argument("-first_point",help="use first point instead of global minimum to compute relative energies", action="store_true", default=False)
+    parser.add_argument("-ref_en",help="use reference energy given in Hartree", type=float, default=None)
 
 
     group_logging = parser.add_argument_group("logging")
@@ -317,7 +344,7 @@ if __name__ == "__main__" :
     # convert our trajectory to a dictionary with lists as elements.
     data = analyse_cogef()
     data.fill_with_molecules(trajectories,filter_en=args.fil,use_first_minimum = args.first_min, 
-                            use_first_point = args.first_point)
+                            use_first_point = args.first_point,ref_en=args.ref_en)
 
     # compute distances
     if args.d:
@@ -335,6 +362,11 @@ if __name__ == "__main__" :
         if args.compforce:
             data.compute_forces()
             data.write_force_csv(args.fcsv)
+    # eps is internally used for differences of distances. we will compute the difference between 
+    # two pairs of atoms a b c d -> d(a-b) - d(c-d)
+    if args.eps:
+        eps_tuples = get_dist_tuple(args.eps)
+        data.save_eps(eps_tuples)
     data.write_en_csv(args.csv,print_veff=args.veff,print_strain=args.strain)
     logger.info("Finished analyse.py.")
     logger.info("")

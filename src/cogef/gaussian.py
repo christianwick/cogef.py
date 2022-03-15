@@ -378,7 +378,10 @@ class CheckGaussianLogfile():
         if isinstance(point,int):
             comment += f" | point {point:03d}"
         if isinstance(self.lowest_freq,float):
-            comment += f" | freq {self.lowest_freq:.3f}"
+            comment += f" | freq {self.lowest_freq:.3f} "
+            logger.debug(f"Imag Freq: {self.imag_frequencies} Nimag: {len(self.imag_frequencies)}")
+            comment += f"| Nimag = {len(self.imag_frequencies)} "
+        logger.debug(f"{comment}")
         return(comment)
     
     @staticmethod

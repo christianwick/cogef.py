@@ -28,6 +28,7 @@ class Molecule():
         self.spin = None
         self.point = None
         self.lowest_freq = None
+        self.nimag = None 
         self.d_mat = None # distance matrix
 
     def __str__(self):
@@ -70,7 +71,7 @@ class Molecule():
             need_to_close = False
         num_atoms=len(self.coordinates)
         of.write("{:} \n".format(num_atoms))
-        of.write("{:80s} \n".format(comment.strip()[:80]))
+        of.write("{:80s} \n".format(comment.strip()))
         for ii in range(num_atoms):
             of.write("{:10s} {:14.8f} {:14.8f} {:14.8f} \n".format(
                 str(self.elements[ii]), *self.coordinates[ii]))
@@ -218,13 +219,14 @@ class Molecule():
         """
         Try to extract information from xyz comment lines.
         assuming the following format:
-        E(UB3LYP) = -118.996452168 | S**2 = 1.008 | point 069 | freq -400.000
+        E(UB3LYP) = -118.996452168 | S**2 = 1.008 | point 069 | freq -400.000 | Nimag = 2
         """
         temp = line.split("|")
         self.energy = float(temp[0].split()[2])
         self.spin = float(temp[1].split()[2])
         self.point = int(temp[2].split()[1])
         if len(temp) == 4: self.lowest_freq = float(temp[3].split()[1])
+        if len(temp) == 5: self.nimag = float(temp[4].split()[2])
     
     def comment_line(self, *args):
         comment = f"{self.scf_energy} | S**2 = {self.spin:.3f}"
