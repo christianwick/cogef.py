@@ -51,7 +51,7 @@ if __name__ == "__main__":
     group_gaussian.add_argument("-readfc", help="use initial ForceConstants from guess.chk", action="store_true", default=False)
 
     group_output = parser.add_argument_group("Output options")
-    group_output.add_argument("-trajectory", help="write trajectory to file", type=argparse.FileType("a"), default=None)
+    group_output.add_argument("-trajectory", help="write trajectory to file", type=str, default=None)
     group_output.add_argument("-checkpoint", help="name of the checkpoint file.",
             type=str, default="checkpoint.xyz")
 
