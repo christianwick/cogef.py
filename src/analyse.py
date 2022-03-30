@@ -78,12 +78,16 @@ class analyse_cogef():
         self.max_force = None
         self.eps = [] # difference of distances
         self.eps_label = [] # difference of distances
+        self.nimag = []
+        self.lowest_freq = []
 
     def fill_with_molecules(self,trajectories, filter_en = False,
                             use_first_minimum = False, use_first_point = False, ref_en=None):
         for nn, mol in enumerate(trajectories):
             self.energies.append(mol.energy)
             self.spin.append(mol.spin)
+            self.lowest_freq.append(mol.lowest_freq)
+            self.nimag.append(mol.nimag)
             self.molecules.append(mol)
             self.num_struc.append(nn+1)
         self.energies = np.array(self.energies)
@@ -259,7 +263,7 @@ class analyse_cogef():
             writer.writerow(row)
         
 
-    def write_en_csv(self,of,print_veff=False,print_strain=False,print_spin=True):
+    def write_en_csv(self,of,print_veff=False,print_strain=False,print_spin=True,print_nimag=True,print_freq=True):
         header = ["Num Struc"]
         # set distances
         if len(self.distances) == len(self.energies):
@@ -275,6 +279,10 @@ class analyse_cogef():
             header.extend(self.v_eff_label)
         if print_spin == True:
             header.append("<S**2>")
+        if print_nimag == True:
+            header.append("Nimag")
+        if print_freq == True:
+            header.append("Lowest Freq")
         writer = csv.writer(of)
         writer.writerow(header)
         for nn in range(len(self.energies)):
@@ -292,6 +300,10 @@ class analyse_cogef():
                 row.extend(self.v_eff[nn])
             if print_spin == True:
                 row.append(self.spin[nn])
+            if print_nimag == True:
+                row.append(self.nimag[nn])
+            if print_freq == True:
+                row.append(self.lowest_freq[nn])
             writer.writerow(row)
 
 
