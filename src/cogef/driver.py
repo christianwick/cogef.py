@@ -395,9 +395,7 @@ class cogef_loop():
         """
         self.glog.filename = filename
         self.glog.read_log(self.mulliken_h)
-        if self.glog.check_bonding():
-            self.glog.molecule.write_xyz(f"broken_bond_at_{cycle}.xyz", 
-                comment=self.glog.comment_line(point=cycle))
+
         # check for instability or break out 
         # we also check for stationary points and move the old log files
         glog_is_ok = True
@@ -413,6 +411,10 @@ class cogef_loop():
         if self.check_imag_freq and len(self.glog.imag_frequencies) != 1:
             logger.warning("NImag differs from one at cylce {} {}".format(cycle,error_cycle ))
             glog_is_ok =False
+        if glog_is_ok:
+            if self.glog.check_bonding():
+                self.glog.molecule.write_xyz(f"broken_bond_at_{cycle}.xyz", 
+                comment=self.glog.comment_line(point=cycle))
         return ( self.glog.molecule.coordinates, glog_is_ok )
                          
 
