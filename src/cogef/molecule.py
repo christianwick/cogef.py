@@ -225,7 +225,7 @@ class Molecule():
         self.energy = float(temp[0].split()[2])
         self.spin = float(temp[1].split()[2])
         self.point = int(temp[2].split()[1])
-        if len(temp) == 4: self.lowest_freq = float(temp[3].split()[1])
+        if len(temp) >= 4: self.lowest_freq = float(temp[3].split()[1])
         if len(temp) == 5: self.nimag = float(temp[4].split()[2])
     
     def comment_line(self, *args):
