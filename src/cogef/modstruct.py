@@ -32,7 +32,7 @@ def mod_single_atom(coords,atom1,atom2,dx=0.02,symmetric=False):
 
 
 def mod_fragments(coords, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exclude = None,
-        symmetric=False, current_strain = 0.0, beta = 1.0):
+        symmetric=False, current_strain = 0.0, beta = 1.0, nbonds=0.0):
     """ modify the coordinates of molecules using fragments
 
     compute the vector between atom1 and atom2 and stretch all atoms by a certain amount
@@ -61,9 +61,12 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exclu
         current_strain : float
             add an additive perturbation to separate fragments
         beta: float
-            adbeta an additional multiplicative damping to the strain perturbation
+            add an additional multiplicative damping to the strain perturbation
+        nbonds: float
+            number of bonds along the chain. The lenght of the translation vector 
+            for the fragment atoms will be devided by this value if the strain method 
+            is used 
 
-    
     returns
         mat : np.array(n,3)
     """
@@ -102,7 +105,7 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exclu
         u[atom2] += vec_dx * 0.5
         
     else: 
-        vec_a = ( mat[frag_a] - mat[atom1] ) * current_strain 
+        vec_a = ( mat[frag_a] - mat[atom1] ) * current_strain / nbonds
         logger.debug(f"norm vec_a: {np.linalg.norm(vec_a,axis=1)}")
         dot_a = np.abs(np.matmul(vec_a,vec))
         u[frag_a] -= vec * (( dx * alpha ) + ( beta * dot_a[:,None] ))

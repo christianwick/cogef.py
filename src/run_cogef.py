@@ -61,6 +61,8 @@ if __name__ == "__main__":
     group_tweaks.add_argument("-dx", help="step size.", default=0.02,type=float)
     group_tweaks.add_argument("-alpha", help="add perturbation for fragment atoms", default=1.0,type=float)
     group_tweaks.add_argument("-beta", help="damp the additive strain perturbation", default=1.0,type=float)
+    group_tweaks.add_argument("-nbonds", help="damp the additive strain perturbation according to the number of bonds nbonds",
+                                default=1.0,type=float)
     group_tweaks.add_argument("-fragment",help="list of atoms in fragment 1 as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
     group_tweaks.add_argument("-exclude",help="list of atoms to exclude from fragments as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
     group_tweaks.add_argument("-cycles", help="number n of cycles to run", type=int, default=1)
@@ -115,7 +117,7 @@ if __name__ == "__main__":
                     "checkpoint" : args.checkpoint, "oniomtemplate" : args.oniom, "ambertemplate" : args.amber,
                     "oniomopt" : args.oniomopt, "constraint" : args.constraint ,
                     "no_mix" : args.no_mix, "no_micro" : args.no_micro, "quadmac" : args.quadmac ,
-                    "use_strain" : args.use_strain, "beta" : args.beta }
+                    "use_strain" : args.use_strain, "beta" : args.beta, "nbonds" : args.nbonds }
     if args.oniom:
         logger.debug("Starting ONIOM driver")
         data = driver.oniom_cogef_loop(**driver_args)

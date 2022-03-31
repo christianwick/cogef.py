@@ -37,7 +37,7 @@ class cogef_loop():
                     alpha=1.0, fragment = None, exclude = None, 
                     max_error_cycles = 5, mulliken_h = False,
                     trajectory = None, checkpoint = None , no_mix = False,
-                    use_strain = False, beta = 1.0, **kwargs):
+                    use_strain = False, beta = 1.0, nbonds=1.0, **kwargs):
         """
         initalise all important parameters
 
@@ -101,6 +101,10 @@ class cogef_loop():
                         fragments
                     beta: float
                         adds an additional multiplicative damping to the strain perturbation
+                    nbonds: float
+                        number of bonds along the chain. The lenght of the translation vector 
+                        for the fragment atoms will be devided by this value if the strain method 
+                        is used 
 
         internal Parameters:
                     self.check_stability : boolean   
@@ -122,6 +126,7 @@ class cogef_loop():
         self.symm_stretch= symm_stretch
         self.alpha = alpha
         self.beta = beta
+        self.nbonds = nbonds
         self.fragment = fragment
         self.exclude = exclude
         self.max_error_cycles = max_error_cycles
