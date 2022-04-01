@@ -50,10 +50,11 @@ if __name__ == "__main__":
     while counter < 2:
         coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
                 atom1 = 0, atom2 = 10,
-                fragment=[0,1,2,3], 
+                frag1=[0,1,2,3],
+                frag2=[4,5,6,7,8,9,10],  
                 exclude= [5,6],
                 dx = 1.0, 
-                dp = 0.5, 
+                alpha = 0.5, 
                 symmetric=True)
         print("Cycle: {}".format(counter))
         print(str(coords.molecule))
@@ -66,10 +67,11 @@ if __name__ == "__main__":
     while counter < 2:
         coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
                 atom1 = 0, atom2 = 10,
-                fragment=[0,1,2,3], 
+                frag1=[0,1,2,3],
+                frag2=[4,5,6,7,8,9,10], 
                 exclude = [5,6],
                 dx = -0.5, 
-                dp = 0.5, 
+                alpha = 0.5, 
                 symmetric=True)
         print("Cycle: {}".format(counter))
         print(str(coords.molecule))
@@ -94,10 +96,32 @@ if __name__ == "__main__":
     while counter < 2:
         coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
                 atom1 = 0, atom2 = 10,
-                fragment=[], 
+                frag1=[], 
+                frag2=[],
                 dx = 5.0, 
-                dp = 1.0, 
+                alpha = 1.0, 
                 symmetric=False)
         print("Cycle: {}".format(counter))
+        print(str(coords.molecule))
+        counter += 1
+
+    # test mod_fragments in forward direction with strain
+    print("Testing mod_fragments in forward direction")
+    coords.molecule.read_xyz(xyz_file)
+    counter = 0
+    dx = 1.0
+    while counter < 10:
+
+        current_strain = counter * dx / 4.35807
+        coords.molecule.coordinates = mod_fragments(coords = coords.molecule.coordinates,
+                atom1 = 0, atom2 = 10,
+                frag1=[0,1,2,3],
+                frag2=[4,5,6,7,8,9,10],  
+                exclude= [5,6],
+                dx = dx, 
+                alpha = 0.0,
+                current_strain=current_strain, 
+                symmetric=True)
+        print("Cycle: {} Strain: {}".format(counter,current_strain))
         print(str(coords.molecule))
         counter += 1

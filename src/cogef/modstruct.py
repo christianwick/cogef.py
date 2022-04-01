@@ -31,8 +31,8 @@ def mod_single_atom(coords,atom1,atom2,dx=0.02,symmetric=False):
         return(new_coorbeta)
 
 
-def mod_fragments(coords, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exclude = None,
-        symmetric=False, current_strain = 0.0, beta = 1.0, nbonds=0.0):
+def mod_fragments(coords, atom1, atom2, dx=0.02, alpha=1.0, frag1=None, frag2=None, exclude = None,
+        symmetric=False, current_strain = 0.0, beta = 1.0, nbonds=1.0):
     """ modify the coordinates of molecules using fragments
 
     compute the vector between atom1 and atom2 and stretch all atoms by a certain amount
@@ -50,9 +50,12 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exclu
         atom2: int
             second atom to stretch by dx
         dx: float
-        fragment: list
+        frag1: list
             litst of atom numbers starting at 0
             atom1 must be part of fragments!
+        frag2: list
+            list of atom numbers starting at 0
+            atom2 must be part of fragments!
         exclude: list
             list of atom numbers starting at 0 to be excluded from movement.
         alpha: float
@@ -74,18 +77,20 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exclu
     if len(coords[0]) == 4:
         elements = [x[0] for x in coords]
         coords = [[x[1],x[2],x[3]] for x in coords ]
-    frag_a = []
-    frag_b = []
-    if fragment != []: 
-        frag_a = fragment[:]
-        frag_b = [ x for x in range(len(coords)) if x not in frag_a ]
-        if exclude:
-            frag_a = [ x for x in frag_a if x not in exclude ]
-            frag_b = [ x for x in frag_b if x not in exclude ]
-        frag_a.remove(atom1)
-        frag_b.remove(atom2)
-    logger.debug("fragment A: {} ; alpha: {:4.3f} A; strain: {:4.3f}; beta: {:4.3f}".format(frag_a, alpha, current_strain, beta))
-    logger.debug("fragment B: {} ; alpha: {:4.3f} A; strain: {:4.3f}; beta: {:4.3f}".format(frag_b, alpha, current_strain, beta))
+    frag_2 = frag2
+    frag_1 = frag1
+    #if fragment != []: 
+    #    frag_2 = fragment[:]
+    #    frag_1 = [ x for x in range(len(coords)) if x not in frag_2 ]
+    if exclude:
+        frag_2 = [ x for x in frag_2 if x not in exclude ]
+        frag_1 = [ x for x in frag_1 if x not in exclude ]
+    if atom2 in frag2: frag_2.remove(atom2)
+    if atom1 in frag1: frag_1.remove(atom1)
+    if atom1 in frag2 or atom2 in frag1:
+        logger.warning("Wrong atom definitions. Found stretching atom in wrong fragment. CHECK YOUR INPUT.")
+    logger.debug("fragment 2: {} ; alpha: {:4.3f} A; strain: {:4.3f}; beta: {:4.3f}".format(frag_2, alpha, current_strain, beta))
+    logger.debug("fragment 1: {} ; alpha: {:4.3f} A; strain: {:4.3f}; beta: {:4.3f}".format(frag_1, alpha, current_strain, beta))
     mat = np.array(coords)
     vec = ( mat[atom2,:] - mat[atom1,:] ) / np.linalg.norm( mat[atom1,:] - mat[atom2,:] )
     vec_dx = vec * dx
@@ -93,23 +98,23 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, alpha=1.0, fragment=None, exclu
 
     u = np.zeros_like(mat)
     if symmetric:
-        vec_a = ( mat[frag_a] - mat[atom1] ) * current_strain 
-        vec_b = ( mat[frag_b] - mat[atom2] ) * current_strain 
-        logger.debug(f"norm vec_a: {np.linalg.norm(vec_a,axis=1)}")
-        logger.debug(f"norm vec_b: {np.linalg.norm(vec_b,axis=1)}")
-        dot_a = np.abs(np.matmul(vec_a,vec))
-        dot_b = np.abs(np.matmul(vec_b,vec))
-        u[frag_a] -= vec * 0.5 * (( dx * alpha ) + ( beta * dot_a[:,None] ))
-        u[frag_b] += vec * 0.5 * (( dx * alpha ) + ( beta * dot_b[:,None] ))
+        vec_2 = -1 * ( mat[frag_2] - mat[atom2] ) * current_strain * 0.5 / nbonds
+        vec_1 = -1 * ( mat[frag_1] - mat[atom1] ) * current_strain * 0.5 / nbonds
+        logger.debug(f"norm vec_2: {np.linalg.norm(vec_2,axis=1)}")
+        logger.debug(f"norm vec_1: {np.linalg.norm(vec_1,axis=1)}")
+        dot_2 = np.abs(np.matmul(vec_2,vec))
+        dot_1 = np.abs(np.matmul(vec_1,vec))
+        u[frag_2] += vec  * (( dx * alpha ) + ( beta * dot_2[:,None] ))
+        u[frag_1] -= vec  * (( dx * alpha ) + ( beta * dot_1[:,None] ))
         u[atom1] -= vec_dx * 0.5
         u[atom2] += vec_dx * 0.5
         
     else: 
-        vec_a = ( mat[frag_a] - mat[atom1] ) * current_strain / nbonds
-        logger.debug(f"norm vec_a: {np.linalg.norm(vec_a,axis=1)}")
-        dot_a = np.abs(np.matmul(vec_a,vec))
-        u[frag_a] -= vec * (( dx * alpha ) + ( beta * dot_a[:,None] ))
-        u[atom1] -= vec_dx 
+        vec_2 = -1 * ( mat[frag_2] - mat[atom2] ) * current_strain / nbonds
+        logger.debug(f"norm vec_2: {np.linalg.norm(vec_2,axis=1)}")
+        dot_2 = np.abs(np.matmul(vec_2,vec))
+        u[frag_2] += vec * (( dx * alpha ) + ( beta * dot_2[:,None] ))
+        u[atom2] += vec_dx 
     logger.debug(f"norm u: {np.linalg.norm(u,axis=1)}")
 
     mat += u

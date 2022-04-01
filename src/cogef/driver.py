@@ -34,7 +34,7 @@ class cogef_loop():
                     maxcyc = None, maxconv = 75, startchk = False, cm = "0 1",
                     cycles = 1, reverse = None, restart = 1, restart_xyz = None,
                     modredundant=None, readfc=False, symm_stretch=True, 
-                    alpha=1.0, fragment = None, exclude = None, 
+                    alpha=1.0, frag1= None, frag2=None, exclude = None, 
                     max_error_cycles = 5, mulliken_h = False,
                     trajectory = None, checkpoint = None , no_mix = False,
                     use_strain = False, beta = 1.0, nbonds=1.0, **kwargs):
@@ -81,8 +81,10 @@ class cogef_loop():
                         stretch symmetric (True) or asymmetric (False)
                     alpha : float
                         alpha used to scale the stretching of the fragment atoms
-                    fragment : list 
+                    frag1 : list 
                         contains all the atoms of the first fragment to be stretched.
+                    frag2 : list 
+                        contains all the atoms of the second fragment to be stretched.
                     exclude : list 
                         contains all the atoms not to be stretched.
                     max_error_cycles : int
@@ -127,7 +129,8 @@ class cogef_loop():
         self.alpha = alpha
         self.beta = beta
         self.nbonds = nbonds
-        self.fragment = fragment
+        self.frag1 = frag1
+        self.frag2 = frag2
         self.exclude = exclude
         self.max_error_cycles = max_error_cycles
         self.glog = gaussian.CheckGaussianLogfile()
@@ -259,8 +262,8 @@ class cogef_loop():
                 self.allow_mixing = False
             self.ginp.molecule.coordinates = modstruct.mod_fragments(coords = self.ginp.molecule.coordinates, 
                                atom1 = self.atom1, atom2 = self.atom2, dx = self.dx, symmetric=self.symm_stretch,
-                               alpha=self.alpha, fragment = self.fragment, exclude = self.exclude,
-                               current_strain = current_strain, beta=self.beta)
+                               alpha=self.alpha, frag1= self.frag1, frag2=self.frag2, exclude = self.exclude,
+                               current_strain = current_strain, beta=self.beta, nbonds=self.nbonds)
             # write checkpoint structure to disk.
             if self.checkpoint:
                 logger.info(f"Writing checkpoint xyz file {self.checkpoint}")
