@@ -104,8 +104,8 @@ def mod_fragments(coords, atom1, atom2, dx=0.02, alpha=1.0, frag1=None, frag2=No
         logger.debug(f"norm vec_1: {np.linalg.norm(vec_1,axis=1)}")
         dot_2 = np.abs(np.matmul(vec_2,vec))
         dot_1 = np.abs(np.matmul(vec_1,vec))
-        u[frag_2] += vec  * (( dx * alpha ) + ( beta * dot_2[:,None] ))
-        u[frag_1] -= vec  * (( dx * alpha ) + ( beta * dot_1[:,None] ))
+        u[frag_2] += vec  * (( dx * alpha * 0.5 ) + ( beta * dot_2[:,None] ))
+        u[frag_1] -= vec  * (( dx * alpha * 0.5 ) + ( beta * dot_1[:,None] ))
         u[atom1] -= vec_dx * 0.5
         u[atom2] += vec_dx * 0.5
         
