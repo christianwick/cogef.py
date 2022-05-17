@@ -37,7 +37,7 @@ class cogef_loop():
                     alpha=1.0, frag1= None, frag2=None, exclude = None, 
                     max_error_cycles = 5, mulliken_h = False,
                     trajectory = None, checkpoint = None , no_mix = False,
-                    use_strain = False, beta = 1.0, nbonds=1.0, **kwargs):
+                    use_strain = False, beta = 1.0, nbonds=1.0, cguess=None, **kwargs):
         """
         initalise all important parameters
 
@@ -98,15 +98,14 @@ class cogef_loop():
                     no_mix : Bool
                         If False, allow mixing of initial HOMO,LUMO orbitals, 
                         if True, turn of mixing completely.
-                    use_strain : Bool
-                        if Ture, compute strain and add it as an additive perturbation to the
-                        fragments
                     beta: float
                         adds an additional multiplicative damping to the strain perturbation
                     nbonds: float
                         number of bonds along the chain. The lenght of the translation vector 
                         for the fragment atoms will be devided by this value if the strain method 
                         is used 
+                    cguess : str
+                        select cogef-guess structure generator
 
         internal Parameters:
                     self.check_stability : boolean   
@@ -141,7 +140,7 @@ class cogef_loop():
         self.mulliken_h = mulliken_h
         self.readfc = readfc
         self.allow_mixing = not no_mix
-        self.use_strain = use_strain
+        self.cguess = cguess
         if xyz:
             self.ginp.molecule.read_xyz(xyz)
             self.L_zero = self.ginp.molecule.distance(self.atom1,self.atom2)
@@ -246,24 +245,23 @@ class cogef_loop():
                     error_cycle += 1
                     mix_guess = False # turn off mixing and read 
             # Modify coords for next cycle
-            if self.use_strain:
-                current_strain = self.compute_strain()
-                self.alpha = 0.0
-                logger.info("Current strain = {:4.3f}".format(current_strain))
-                current_strain = ( abs(self.dx) * ( cycle )) / self.L_zero
-                logger.info("Strain at next cycle = {:4.3f}".format(current_strain))
+            current_strain = self.compute_strain()
+            logger.info("Current strain = {:4.3f}".format(current_strain))
+            current_strain = ( abs(self.dx) * ( cycle )) / self.L_zero
+            logger.info("Strain at next cycle = {:4.3f}".format(current_strain))
             if self.glog.found_broken_bond:
                 # we found a broken bond and do not need the perturbations any more.
                 # furthermore, we do not need to mix the orbitals at the beginning, anymore
                 self.alpha = 1.0
                 self.beta = 0.0
                 current_strain = 0.0
+                self.cguess = None
                 mix_guess = False
                 self.allow_mixing = False
             self.ginp.molecule.coordinates = modstruct.mod_fragments(coords = self.ginp.molecule.coordinates, 
                                atom1 = self.atom1, atom2 = self.atom2, dx = self.dx, symmetric=self.symm_stretch,
                                alpha=self.alpha, frag1= self.frag1, frag2=self.frag2, exclude = self.exclude,
-                               current_strain = current_strain, beta=self.beta, nbonds=self.nbonds)
+                               current_strain = current_strain, beta=self.beta, nbonds=self.nbonds, cguess=self.cguess)
             # write checkpoint structure to disk.
             if self.checkpoint:
                 logger.info(f"Writing checkpoint xyz file {self.checkpoint}")

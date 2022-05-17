@@ -40,8 +40,8 @@ if __name__ == "__main__":
 
 
     group_gaussian = parser.add_argument_group("Gaussian options")
-    group_gaussian.add_argument("-nproc", help="nproc", type=str, default="12")
-    group_gaussian.add_argument("-mem", help="memory", type=str, default="12GB")
+    group_gaussian.add_argument("-nproc", help="nproc", type=str, default=None)
+    group_gaussian.add_argument("-mem", help="memory", type=str, default=None)
     group_gaussian.add_argument("-method", help="e.g. B3LYP/6-31G*", type=str, default=None)
     group_gaussian.add_argument("-startchk", help="use initial guess from guess.chk", action="store_true", default=False)
     group_gaussian.add_argument("-maxcyc", help="Sets the maximum number of optimization steps to N", type=int, default=50)
@@ -58,6 +58,8 @@ if __name__ == "__main__":
     group_tweaks = parser.add_argument_group("cogef")
     group_tweaks.add_argument("-runtype", help="restricted/unrestricted/rTS/uTS cogef", 
             choices=["restricted","unrestricted","rTS","uTS"], type=str, default="restricted")
+    group_tweaks.add_argument("-cguess", help="None/dx/strain", 
+            choices=["dx","strain","new_strain"], type=str, default=None)
     group_tweaks.add_argument("-dx", help="step size.", default=0.02,type=float)
     group_tweaks.add_argument("-alpha", help="add perturbation for fragment atoms", default=1.0,type=float)
     group_tweaks.add_argument("-beta", help="damp the additive strain perturbation", default=1.0,type=float)
@@ -74,8 +76,6 @@ if __name__ == "__main__":
     group_tweaks.add_argument("-symm_stretch", 
         help ="perform symmetric stretch moving both atoms (framgents). asymmetric otherwise.", action="store_true",
         default = False)
-    group_tweaks.add_argument("-use_strain", help ="compute the strain at each iteration and move the fragments by this amount",
-        action="store_true",default = False)
     group_tweaks.add_argument("-mulliken_h", 
         help ="use mulliken charges with Hydrogens summed into heavy atoms. Otherwise use standard mulliken charges",
         action="store_true", default = False)
@@ -119,7 +119,8 @@ if __name__ == "__main__":
                     "checkpoint" : args.checkpoint, "oniomtemplate" : args.oniom, "ambertemplate" : args.amber,
                     "oniomopt" : args.oniomopt, "constraint" : args.constraint ,
                     "no_mix" : args.no_mix, "no_micro" : args.no_micro, "quadmac" : args.quadmac ,
-                    "use_strain" : args.use_strain, "beta" : args.beta, "nbonds" : args.nbonds }
+                    "beta" : args.beta, "nbonds" : args.nbonds,
+                    "cguess" : args.cguess }
     if args.oniom:
         logger.debug("Starting ONIOM driver")
         data = driver.oniom_cogef_loop(**driver_args)

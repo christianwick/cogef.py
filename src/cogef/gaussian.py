@@ -21,8 +21,10 @@ class classLink0():
         lines = ""
         if self.chk:
             lines += "%chk=" + self.chk.strip() + "\n"
-        lines += "%mem=" + self.mem.strip() + "\n"
-        lines += "%nproc=" + self.nproc.strip() + "\n"
+        if self.mem:
+            lines += "%mem=" + self.mem.strip() + "\n"
+        if self.nproc:
+            lines += "%nproc=" + self.nproc.strip() + "\n"
         lines += "\n"
         return(lines)
 
