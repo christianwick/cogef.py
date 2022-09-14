@@ -16,7 +16,7 @@ The following tools are included in cogef.py:
   - src/run_cogef.py : actual cogef driver to run cogef calculations
   - src/analyse.py   : analyse cogef xyz trajectory files produced by run_cogef.py
   - src/gausp.py : conduct single point calculations on a cogef xyz trajectory file and 
-               produce a new cogef trajectory file which can be analysed be analyse.py
+                  produce a new cogef trajectory file which can be analysed be analyse.py
  
 helper tools which are considered to be beta and subject to drastic changes:
   - src/simple_orca_sp.py : conduct single point calculations on a cogef xyz trajectory file with orca
@@ -78,7 +78,7 @@ $g16root/g16/g16 < $1 > $logfile
   ```
   and add to your .bashrc file the following line:
   ```bash
-  PATH=$PATH:~/bin
+  export PATH=$PATH:~/bin
   ```
 
 ## Usage
@@ -94,7 +94,7 @@ Now you can see all available options like this:
 # run_cogef.py 
 $COGEF_BASEDIR/run_cogef.py -h
 # or gausp.py
-$COGEF_BASEDOR/gasup.py -h
+$COGEF_BASEDIR/gasup.py -h
 ```
 
 you can access the cogef tools in your scripts using
@@ -205,3 +205,9 @@ This section will be expanded in future releases.
 
 The code is provided as-is without any warranty for its correctness under the MIT license (see `LICENSE` file)
 
+
+## Contact
+
+Dr. Christian R. Wick
+
+Friedrich-Alexander-Universität Erlangen-Nürnberg,  PULS Group, Institute for theoretical Physics Interdisciplinary Center for Nanostructured Films (IZNF), Cauerstrasse 3, 91058 Erlangen, Germany
