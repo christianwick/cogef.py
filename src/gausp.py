@@ -26,8 +26,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-xyztrj", required=True, help="xyz trajectory file", type=argparse.FileType('r'))
     parser.add_argument("-cm",help="charge/multiplicity line e.g '0,1'",type=str, default="0 1")
-    parser.add_argument("-nproc", help="nproc", type=str, default="12")
-    parser.add_argument("-mem", help="memory", type=str, default="12GB")
+    parser.add_argument("-nproc", help="nproc", type=str, default=None)
+    parser.add_argument("-mem", help="memory", type=str, default=None)
     parser.add_argument("-method", help="UwB97XD/def2TZVPP", type=str, default=None)
     parser.add_argument("-chk", help="use common chk file e.g. 'guess.chk'", type=str, default=None)
     parser.add_argument("-reverse", help="reverse calculation starting at last point", action="store_true", default=False)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
             logger.info(f"Starting cycle {cycle}")
             ginp.of = of
             ginp.write_inputfile(link1=False, route=route, geom=True, modredundant=None)
-        rungauss = subprocess.run(["cogef_rung16",filename + ".com"], check=True, capture_output=True, text=True)
+        rungauss = subprocess.run(["cogef_rung16",filename + ".com"])
         glog.filename = filename+".log"
         glog.read_log()
         ginp.molecule.write_xyz("gausp_trj.xyz", comment=glog.comment_line(point=cycle), write_mode="a")
