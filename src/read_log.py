@@ -25,6 +25,7 @@ from cogef._version import __version__
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("glogs", help="gaussian log files", type=str, nargs="+")
+    parser.add_argument("-oxyz", help="name of the output xyz file", type=str, default="glog_trj.xyz")
 
     group_logging = parser.add_argument_group("logging")
     group_logging.add_argument("-log_level", help="set the log level", choices=["DEBUG","INFO"], default="INFO")
@@ -34,9 +35,9 @@ if __name__ == "__main__":
 
     # START LOGGING HERE
     # this way no logs are created for e.g. -h or --version 
-    cogef_logging.logging_init(log_file="gausp.log",log_level = args.log_level, stream_level = args.stream_level)
-    logger = logging.getLogger("gausp")
-    logger.info("Starting Gaussian single point calculations .... " )
+    cogef_logging.logging_init(log_file="read_log.log",log_level = args.log_level, stream_level = args.stream_level)
+    logger = logging.getLogger("read_log")
+    logger.info("Reading gaussian log files .... " )
     logger.info("Version: {}".format(__version__))
     logger.info("Command line Arguments: ")
     for arg,value in (vars(args)).items():
@@ -48,7 +49,7 @@ if __name__ == "__main__":
         glog.read_log()
         logger.info(f"imaginary frequencies: {glog.imag_frequencies} {len(glog.imag_frequencies)}")
         logger.info(f"lowest freq {glog.lowest_freq}")
-        glog.molecule.write_xyz("glog_trj.xyz", comment=glog.comment_line(point=cycle+1), write_mode="a")
+        glog.molecule.write_xyz(args.oxyz, comment=glog.comment_line(point=cycle+1), write_mode="a")
 
     # STOP LOGGING HERE
     logger.info("Finished reading gaussian log files " )
