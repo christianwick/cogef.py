@@ -43,12 +43,18 @@ if __name__ == "__main__":
     group_gaussian.add_argument("-nproc", help="nproc", type=str, default=None)
     group_gaussian.add_argument("-mem", help="memory", type=str, default=None)
     group_gaussian.add_argument("-method", help="e.g. B3LYP/6-31G*", type=str, default=None)
-    group_gaussian.add_argument("-startchk", help="use initial guess from guess.chk", action="store_true", default=False)
+    group_gaussian.add_argument("-startchk",
+            #help="use initial guess from guess.chk",
+            help = argparse.SUPPRESS, 
+            action="store_true", default=False)
     group_gaussian.add_argument("-maxcyc", help="Sets the maximum number of optimization steps to N", type=int, default=50)
     group_gaussian.add_argument("-maxconv", help="Sets the maximum number conventional SCF cycles", type=int, default=75)
     group_gaussian.add_argument("-modredundant", help="add additional modredundant sections separated by ',' eg. '1 2 F, 2 3 F'", 
         type=str, default="")
-    group_gaussian.add_argument("-readfc", help="use initial ForceConstants from guess.chk", action="store_true", default=False)
+    group_gaussian.add_argument("-readfc", 
+            #help="use initial ForceConstants from guess.chk",
+            help = argparse.SUPPRESS, 
+            action="store_true", default=False)
 
     group_output = parser.add_argument_group("Output options")
     group_output.add_argument("-trajectory", help="write trajectory to file", type=str, default=None)
@@ -56,28 +62,44 @@ if __name__ == "__main__":
             type=str, default="checkpoint.xyz")
 
     group_tweaks = parser.add_argument_group("cogef")
-    group_tweaks.add_argument("-runtype", help="restricted/unrestricted/rTS/uTS cogef", 
+    group_tweaks.add_argument("-runtype", 
+            #help="restricted/unrestricted/rTS/uTS cogef", 
+            help="restricted/unrestricted cogef", 
             choices=["restricted","unrestricted","rTS","uTS"], type=str, default="restricted")
-    group_tweaks.add_argument("-cguess", help="None/dx/strain", 
+    group_tweaks.add_argument("-cguess", 
+            #help="None/dx/strain", 
+            help = argparse.SUPPRESS,
             choices=["dx","strain","new_strain"], type=str, default=None)
     group_tweaks.add_argument("-dx", help="step size.", default=0.02,type=float)
-    group_tweaks.add_argument("-alpha", help="add perturbation for fragment atoms", default=1.0,type=float)
-    group_tweaks.add_argument("-beta", help="damp the additive strain perturbation", default=1.0,type=float)
-    group_tweaks.add_argument("-nbonds", help="damp the additive strain perturbation according to the number of bonds nbonds",
+    #group_tweaks.add_argument("-alpha", help="add perturbation for fragment atoms", default=1.0,type=float)
+    group_tweaks.add_argument("-alpha", help=argparse.SUPPRESS, default=1.0,type=float)
+    #group_tweaks.add_argument("-beta", help="damp the additive strain perturbation", default=1.0,type=float)
+    group_tweaks.add_argument("-beta", help=argparse.SUPPRESS, default=1.0,type=float)
+    #group_tweaks.add_argument("-nbonds", help="damp the additive strain perturbation according to the number of bonds nbonds",
+    #                            default=1.0,type=float)
+    group_tweaks.add_argument("-nbonds", help=argparse.SUPPRESS,
                                 default=1.0,type=float)
-    group_tweaks.add_argument("-frag1",help="list of atoms in fragment 1 as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
-    group_tweaks.add_argument("-frag2",help="list of atoms in fragment 2 as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
-    group_tweaks.add_argument("-exclude",help="list of atoms to exclude from fragments as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
+    #group_tweaks.add_argument("-frag1",help="list of atoms in fragment 1 as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
+    group_tweaks.add_argument("-frag1",help=argparse.SUPPRESS,type=str, default="")
+    #group_tweaks.add_argument("-frag2",help="list of atoms in fragment 2 as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
+    group_tweaks.add_argument("-frag2",help=argparse.SUPPRESS,type=str, default="")
+    #group_tweaks.add_argument("-exclude",help="list of atoms to exclude from fragments as string, e.g. '1,2,3,4' or '1-4'",type=str, default="")
+    group_tweaks.add_argument("-exclude",help=argparse.SUPPRESS,type=str, default="")
     group_tweaks.add_argument("-cycles", help="number n of cycles to run", type=int, default=1)
-    group_tweaks.add_argument("-restart", help="restart from cylce n. needs guess.chk and checkpoint.xyz", type=int, default=1)
-    group_tweaks.add_argument("-restart_xyz", help="restart coordinates from checkpoint.xyz", type=argparse.FileType('r'), default=None)
-    group_tweaks.add_argument("-reverse", help="reverse from cylce n. needs guess.chk and start geometry as .xyz", type=int, default=None)
+    #group_tweaks.add_argument("-restart", help="restart from cylce n. needs guess.chk and checkpoint.xyz", type=int, default=1)
+    group_tweaks.add_argument("-restart", help=argparse.SUPPRESS, type=int, default=1)
+    #group_tweaks.add_argument("-restart_xyz", help="restart coordinates from checkpoint.xyz", type=argparse.FileType('r'), default=None)
+    group_tweaks.add_argument("-restart_xyz", help=argparse.SUPPRESS, type=argparse.FileType('r'), default=None)
+    #group_tweaks.add_argument("-reverse", help="reverse from cylce n. needs guess.chk and start geometry as .xyz", type=int, default=None)
+    group_tweaks.add_argument("-reverse", help=argparse.SUPPRESS, type=int, default=None)
     group_tweaks.add_argument("-max_error_cycles", help="number n of error cycles to run", type=int, default=5)
     group_tweaks.add_argument("-symm_stretch", 
-        help ="perform symmetric stretch moving both atoms (framgents). asymmetric otherwise.", action="store_true",
+        #help ="perform symmetric stretch moving both atoms (framgents). asymmetric otherwise.", action="store_true",
+        help = argparse.SUPPRESS,
         default = False)
     group_tweaks.add_argument("-mulliken_h", 
-        help ="use mulliken charges with Hydrogens summed into heavy atoms. Otherwise use standard mulliken charges",
+        # help ="use mulliken charges with Hydrogens summed into heavy atoms. Otherwise use standard mulliken charges",
+        help = argparse.SUPPRESS,
         action="store_true", default = False)
     group_tweaks.add_argument("-no_mix", help ="Turn of mixing of HOMO LUMO orbitals completely.",
         action="store_true", default = False)
